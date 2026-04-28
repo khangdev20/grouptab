@@ -47,7 +47,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-50 dark:bg-neutral-950">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-neutral-950">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
         <div className="py-4">
@@ -55,7 +55,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-6 space-y-5">
+      <div className="flex-1 overflow-y-auto scroll-area px-4 py-6 space-y-5 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
         {/* Profile card */}
         {profile && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl p-5 flex flex-col items-center text-center">

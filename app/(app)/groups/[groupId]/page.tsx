@@ -96,17 +96,23 @@ export default function GroupFeedPage() {
       const ocrData = await ocrRes.json()
       if (!ocrData.success) throw new Error(ocrData.error)
 
+      // Validate OCR result — reject if we couldn't read anything useful
+      const result = ocrData.result
+      if (!result || (!result.merchant_name && !result.total)) {
+        throw new Error('Invalid receipt, please try again')
+      }
+
       const { data: receipt, error: receiptError } = await supabase.from('receipts').insert({
         group_id: groupId, uploaded_by: currentUserId, image_url: publicUrl,
-        merchant_name: ocrData.result.merchant_name, receipt_date: ocrData.result.date,
-        total_amount: ocrData.result.total, ocr_data: ocrData.result, status: 'pending',
+        merchant_name: result.merchant_name, receipt_date: result.date,
+        total_amount: result.total, ocr_data: result, status: 'pending',
       }).select().single()
       if (receiptError) throw receiptError
 
       await supabase.from('messages').insert({
         group_id: groupId, sender_id: currentUserId, type: 'receipt_pending',
-        content: `Receipt from ${ocrData.result.merchant_name || 'Unknown'} — tap to review`,
-        metadata: { receipt_id: receipt.id, amount: ocrData.result.total },
+        content: `Receipt from ${result.merchant_name || 'Unknown merchant'} — tap to review`,
+        metadata: { receipt_id: receipt.id, amount: result.total },
       })
 
       toast.dismiss(toastId)

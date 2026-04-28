@@ -47,7 +47,7 @@ export default function NewGroupPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
         <div className="flex items-center gap-3 py-4">
           <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
@@ -57,7 +57,7 @@ export default function NewGroupPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-6">
+      <div className="flex-1 overflow-y-auto scroll-area px-4 py-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
         <form onSubmit={handleCreate} className="space-y-5">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">

@@ -19,7 +19,7 @@
 }
 
 html {
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body {
@@ -27,7 +27,7 @@ body {
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 
 .mobile-frame {
@@ -35,9 +35,7 @@ body {
   margin: 0 auto;
   height: 100dvh;
   position: relative;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   background: var(--background);
 }
 
@@ -45,6 +43,7 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  overscroll-behavior-y: contain;
 }
 .scroll-area::-webkit-scrollbar { display: none; }
 

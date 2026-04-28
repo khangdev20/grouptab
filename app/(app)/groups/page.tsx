@@ -34,7 +34,7 @@ export default function GroupsPage() {
   }, [])
 
   return (
-    <div className="flex flex-col min-h-full bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
         <div className="flex items-center justify-between py-3">
@@ -52,7 +52,7 @@ export default function GroupsPage() {
       </div>
 
       {/* Groups list */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
         {loading ? (
           <div className="divide-y divide-gray-100 dark:divide-neutral-800 px-4">
             {[0, 1, 2].map((i) => (

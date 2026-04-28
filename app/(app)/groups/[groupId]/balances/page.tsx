@@ -100,7 +100,7 @@ export default function GroupBalancesPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
         <div className="flex items-center gap-3 py-4">
@@ -119,7 +119,7 @@ export default function GroupBalancesPage() {
           <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto scroll-area px-4 py-4 space-y-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
           {/* Net balances */}
           <div>
             <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">

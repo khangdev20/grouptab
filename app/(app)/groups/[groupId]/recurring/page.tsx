@@ -164,7 +164,7 @@ export default function RecurringPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-50 dark:bg-neutral-950">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-neutral-950">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
         <div className="flex items-center justify-between py-4">
@@ -180,7 +180,7 @@ export default function RecurringPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto scroll-area px-4 py-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
