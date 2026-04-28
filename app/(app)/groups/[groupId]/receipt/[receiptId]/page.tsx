@@ -186,7 +186,7 @@ export default function ReceiptReviewPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-dvh">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -257,7 +257,7 @@ export default function ReceiptReviewPage() {
                 onClick={() => setPaidBy(m.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium haptic transition-colors ${
                   paidBy === m.id
-                    ? 'bg-indigo-500 border-indigo-500 text-white'
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
                     : 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
@@ -297,7 +297,7 @@ export default function ReceiptReviewPage() {
         <button
           onClick={handleConfirm}
           disabled={submitting || includedItems.length === 0}
-          className="w-full py-3 px-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-colors haptic flex items-center justify-center gap-2"
+          className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic flex items-center justify-center gap-2"
         >
           <Check size={18} />
           {submitting ? 'Adding expense...' : 'Confirm & Add Expense'}

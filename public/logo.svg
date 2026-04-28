@@ -1,8 +1,8 @@
 <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#818cf8"/>
-      <stop offset="1" stop-color="#4338ca"/>
+      <stop stop-color="#34d399"/>
+      <stop offset="1" stop-color="#059669"/>
     </linearGradient>
     <linearGradient id="shine" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
       <stop stop-color="white" stop-opacity="0.15"/>
@@ -16,12 +16,12 @@
   <!-- Left receipt / bill -->
   <rect x="9" y="13" width="21" height="38" rx="5" fill="white"/>
   <!-- Left receipt lines -->
-  <rect x="13" y="19" width="13" height="2.5" rx="1.25" fill="#6366f1"/>
-  <rect x="13" y="25" width="9" height="1.5" rx=".75" fill="#a5b4fc"/>
-  <rect x="13" y="29" width="11" height="1.5" rx=".75" fill="#a5b4fc"/>
-  <rect x="13" y="33" width="8" height="1.5" rx=".75" fill="#a5b4fc"/>
+  <rect x="13" y="19" width="13" height="2.5" rx="1.25" fill="#10b981"/>
+  <rect x="13" y="25" width="9" height="1.5" rx=".75" fill="#6ee7b7"/>
+  <rect x="13" y="29" width="11" height="1.5" rx=".75" fill="#6ee7b7"/>
+  <rect x="13" y="33" width="8" height="1.5" rx=".75" fill="#6ee7b7"/>
   <!-- Left receipt amount badge -->
-  <rect x="12" y="39" width="15" height="6" rx="3" fill="#6366f1"/>
+  <rect x="12" y="39" width="15" height="6" rx="3" fill="#10b981"/>
   <rect x="14" y="41.5" width="11" height="1.5" rx=".75" fill="white"/>
 
   <!-- Right receipt (secondary / other person) -->
@@ -40,5 +40,5 @@
 
   <!-- Top scissors / split icon -->
   <circle cx="32" cy="9" r="4" fill="white"/>
-  <path d="M30 7.5 L34 10.5 M30 10.5 L34 7.5" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M30 7.5 L34 10.5 M30 10.5 L34 7.5" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
 </svg>

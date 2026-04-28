@@ -81,7 +81,7 @@ export default function JoinGroupPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-dvh bg-white dark:bg-neutral-900">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -99,12 +99,12 @@ export default function JoinGroupPage() {
           )}
 
           {alreadyMember ? (
-            <p className="text-indigo-500 font-medium">You're already in this group. Redirecting...</p>
+            <p className="text-emerald-500 font-medium">You're already in this group. Redirecting...</p>
           ) : (
             <button
               onClick={handleJoin}
               disabled={joining}
-              className="w-full py-3 px-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-colors haptic"
+              className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic"
             >
               {joining ? 'Joining...' : `Join ${group.name}`}
             </button>

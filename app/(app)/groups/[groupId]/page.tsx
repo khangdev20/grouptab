@@ -9,7 +9,7 @@ import ExpenseBubble from '@/components/feed/ExpenseBubble'
 import SettlementBubble from '@/components/feed/SettlementBubble'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupFeedPage() {
@@ -22,6 +22,11 @@ export default function GroupFeedPage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [expenseDesc, setExpenseDesc] = useState('')
+  const [expenseAmount, setExpenseAmount] = useState('')
+  const [expensePaidBy, setExpensePaidBy] = useState('')
+  const [savingExpense, setSavingExpense] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -76,6 +81,49 @@ export default function GroupFeedPage() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
+  }
+
+  const handleAddExpense = async () => {
+    const amount = parseFloat(expenseAmount)
+    if (!expenseDesc.trim() || isNaN(amount) || amount <= 0 || !expensePaidBy || !currentUserId) return
+    setSavingExpense(true)
+    const supabase = createClient()
+
+    // Get all member IDs for equal split
+    const memberIds = Object.keys(profiles)
+    const splitAmount = amount / memberIds.length
+
+    const { data: expense, error: expenseError } = await supabase
+      .from('expenses')
+      .insert({ group_id: groupId, paid_by: expensePaidBy, description: expenseDesc.trim(), total_amount: amount })
+      .select()
+      .single()
+
+    if (expenseError || !expense) {
+      toast.error('Failed to save expense')
+      setSavingExpense(false)
+      return
+    }
+
+    await supabase.from('expense_shares').insert(
+      memberIds.map((uid) => ({ expense_id: expense.id, user_id: uid, amount: splitAmount }))
+    )
+
+    const paidByName = profiles[expensePaidBy]?.name ?? 'Someone'
+    await supabase.from('messages').insert({
+      group_id: groupId,
+      sender_id: currentUserId,
+      type: 'expense',
+      content: `${expenseDesc.trim()} — $${amount.toFixed(2)}`,
+      metadata: { expense_id: expense.id, amount, description: expenseDesc.trim(), paid_by: expensePaidBy, paid_by_name: paidByName },
+    })
+
+    toast.success('Expense added!')
+    setExpenseDesc('')
+    setExpenseAmount('')
+    setExpensePaidBy('')
+    setShowExpenseModal(false)
+    setSavingExpense(false)
   }
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,7 +186,7 @@ export default function GroupFeedPage() {
       const meta = msg.metadata as any
       return (
         <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} my-1`}>
-          <Link href={`/groups/${groupId}/receipt/${meta?.receipt_id}`} className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm max-w-[75%] ${isMine ? 'bg-indigo-500 text-white rounded-br-sm' : 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white rounded-bl-sm'}`}>
+          <Link href={`/groups/${groupId}/receipt/${meta?.receipt_id}`} className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm max-w-[75%] ${isMine ? 'bg-emerald-500 text-white rounded-br-sm' : 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white rounded-bl-sm'}`}>
             <Receipt size={14} /><span>{msg.content}</span>
           </Link>
         </div>
@@ -174,7 +222,7 @@ export default function GroupFeedPage() {
 
       <div className="flex-1 overflow-y-auto px-3 py-4 scroll-area">
         {loading ? (
-          <div className="flex justify-center py-8"><div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-8"><div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center px-6">
             <span className="text-4xl mb-3">👋</span>
@@ -188,6 +236,9 @@ export default function GroupFeedPage() {
 
       <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 pb-safe">
         <div className="flex items-end gap-2">
+          <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
+            <Plus size={18} />
+          </button>
           <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic">
             <Camera size={18} />
           </button>
@@ -195,11 +246,90 @@ export default function GroupFeedPage() {
           <div className="flex-1 bg-gray-100 dark:bg-neutral-800 rounded-2xl px-4 py-2.5 flex items-end gap-2">
             <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message..." rows={1} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 resize-none outline-none max-h-24" style={{ lineHeight: '1.4' }} />
           </div>
-          <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-indigo-500 disabled:bg-indigo-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-shrink-0 haptic transition-colors">
+          <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-emerald-500 disabled:bg-emerald-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-shrink-0 haptic transition-colors">
             <Send size={16} className="text-white" />
           </button>
         </div>
       </div>
+
+      {/* Manual Expense Modal */}
+      {showExpenseModal && (
+        <div className="absolute inset-0 bg-black/50 z-10 flex items-end" onClick={(e) => e.target === e.currentTarget && setShowExpenseModal(false)}>
+          <div className="w-full bg-white dark:bg-neutral-900 rounded-t-3xl px-5 pt-5 pb-safe">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">Add Expense</h3>
+              <button onClick={() => setShowExpenseModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center haptic">
+                <X size={16} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Description</label>
+                <input
+                  type="text"
+                  value={expenseDesc}
+                  onChange={(e) => setExpenseDesc(e.target.value)}
+                  placeholder="Dinner, groceries, etc."
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Amount</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={expenseAmount}
+                    onChange={(e) => setExpenseAmount(e.target.value)}
+                    placeholder="0.00"
+                    min="0.01"
+                    step="0.01"
+                    className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Paid by</label>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(profiles).map(([uid, profile]) => (
+                    <button
+                      key={uid}
+                      onClick={() => setExpensePaidBy(uid)}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors haptic ${
+                        expensePaidBy === uid
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {uid === currentUserId ? 'You' : profile.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400 dark:text-gray-500">Split equally among all {Object.keys(profiles).length} members</p>
+
+              <button
+                onClick={handleAddExpense}
+                disabled={savingExpense || !expenseDesc.trim() || !expenseAmount || !expensePaidBy}
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic mb-2"
+              >
+                {savingExpense ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving…
+                  </span>
+                ) : 'Add Expense'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

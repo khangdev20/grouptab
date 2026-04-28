@@ -174,7 +174,7 @@ export default function RecurringPage() {
             </Link>
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">Recurring</h1>
           </div>
-          <button onClick={() => setShowForm(true)} className="w-9 h-9 bg-indigo-500 rounded-full flex items-center justify-center haptic">
+          <button onClick={() => setShowForm(true)} className="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center haptic">
             <Plus size={18} className="text-white" />
           </button>
         </div>
@@ -183,16 +183,16 @@ export default function RecurringPage() {
       <div className="flex-1 overflow-y-auto scroll-area px-4 py-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : payments.length === 0 && !showForm ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center mb-4">
-              <RefreshCw size={28} className="text-indigo-500" />
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mb-4">
+              <RefreshCw size={28} className="text-emerald-500" />
             </div>
             <h2 className="font-semibold text-gray-900 dark:text-white mb-1">No recurring payments</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Set up reminders for regular shared costs like rent, subscriptions, or bills.</p>
-            <button onClick={() => setShowForm(true)} className="px-5 py-2.5 bg-indigo-500 text-white rounded-full text-sm font-semibold haptic">
+            <button onClick={() => setShowForm(true)} className="px-5 py-2.5 bg-emerald-500 text-white rounded-full text-sm font-semibold haptic">
               Add first reminder
             </button>
           </div>
@@ -204,8 +204,8 @@ export default function RecurringPage() {
               const isOverdue = r.next_due_date && new Date(r.next_due_date) < new Date()
               return (
                 <div key={r.id} className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center flex-shrink-0">
-                    <Bell size={18} className="text-indigo-500" />
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                    <Bell size={18} className="text-emerald-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -255,7 +255,7 @@ export default function RecurringPage() {
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Frequency</label>
               <div className="flex flex-wrap gap-2">
                 {FREQUENCIES.map((f) => (
-                  <button key={f.value} onClick={() => setFrequency(f.value)} className={`px-3 py-1.5 rounded-full text-xs font-semibold border haptic transition-colors ${frequency === f.value ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
+                  <button key={f.value} onClick={() => setFrequency(f.value)} className={`px-3 py-1.5 rounded-full text-xs font-semibold border haptic transition-colors ${frequency === f.value ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
                     {f.label}
                   </button>
                 ))}
@@ -267,7 +267,7 @@ export default function RecurringPage() {
                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Day(s) of week</label>
                 <div className="flex gap-1.5 flex-wrap">
                   {DAYS_OF_WEEK.map((d, i) => (
-                    <button key={i} onClick={() => toggleDay(i)} className={`w-10 h-10 rounded-full text-xs font-semibold haptic transition-colors ${selectedDays.includes(i) ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400'}`}>
+                    <button key={i} onClick={() => toggleDay(i)} className={`w-10 h-10 rounded-full text-xs font-semibold haptic transition-colors ${selectedDays.includes(i) ? 'bg-emerald-500 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400'}`}>
                       {d}
                     </button>
                   ))}
@@ -291,7 +291,7 @@ export default function RecurringPage() {
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Paid by</label>
               <div className="flex flex-wrap gap-2">
                 {members.map((m) => (
-                  <button key={m.id} onClick={() => setPayerId(m.id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium haptic ${payerId === m.id ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
+                  <button key={m.id} onClick={() => setPayerId(m.id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium haptic ${payerId === m.id ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
                     {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
                   </button>
                 ))}
@@ -302,7 +302,7 @@ export default function RecurringPage() {
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Split between</label>
               <div className="flex flex-wrap gap-2">
                 {members.map((m) => (
-                  <button key={m.id} onClick={() => toggleInvolved(m.id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium haptic ${involvedIds.includes(m.id) ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
+                  <button key={m.id} onClick={() => toggleInvolved(m.id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium haptic ${involvedIds.includes(m.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
                     {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
                   </button>
                 ))}
@@ -318,7 +318,7 @@ export default function RecurringPage() {
               <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-sm font-semibold text-gray-600 dark:text-gray-400 haptic">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving || !title.trim() || !amount} className="flex-1 py-2.5 rounded-xl bg-indigo-500 disabled:bg-indigo-300 text-white text-sm font-semibold haptic">
+              <button onClick={handleSave} disabled={saving || !title.trim() || !amount} className="flex-1 py-2.5 rounded-xl bg-emerald-500 disabled:bg-emerald-300 text-white text-sm font-semibold haptic">
                 {saving ? 'Saving...' : 'Save'}
               </button>
             </div>

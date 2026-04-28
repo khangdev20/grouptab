@@ -28,7 +28,7 @@ export default function MessageBubble({ message, sender, isMine, showAvatar }: M
         <div
           className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
             isMine
-              ? 'bg-indigo-500 text-white rounded-br-sm'
+              ? 'bg-emerald-500 text-white rounded-br-sm'
               : 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white rounded-bl-sm'
           }`}
         >

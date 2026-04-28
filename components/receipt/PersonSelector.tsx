@@ -32,7 +32,7 @@ export default function PersonSelector({ members, selected, onChange, currentUse
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-colors haptic',
               isSelected
-                ? 'bg-indigo-500 border-indigo-500 text-white'
+                ? 'bg-emerald-500 border-emerald-500 text-white'
                 : 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-gray-300'
             )}
           >

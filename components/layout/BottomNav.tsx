@@ -31,7 +31,7 @@ export default function BottomNav() {
               className={cn(
                 'flex flex-col items-center gap-0.5 px-4 py-1 rounded-xl transition-colors haptic',
                 active
-                  ? 'text-indigo-500'
+                  ? 'text-emerald-500'
                   : 'text-gray-400 dark:text-gray-500'
               )}
             >

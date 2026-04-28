@@ -116,7 +116,7 @@ export default function GroupBalancesPage() {
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto scroll-area px-4 py-4 space-y-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
@@ -182,13 +182,13 @@ export default function GroupBalancesPage() {
                           {' '}
                           <span className="font-semibold">{toIsMe ? 'you' : to?.name}</span>
                         </p>
-                        <p className="text-sm font-bold text-indigo-500 mt-0.5">{formatCurrency(debt.amount)}</p>
+                        <p className="text-sm font-bold text-emerald-500 mt-0.5">{formatCurrency(debt.amount)}</p>
                       </div>
                       {isMyDebt && (
                         <button
                           onClick={() => handleSettle(debt)}
                           disabled={settling === key}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white rounded-full text-xs font-semibold haptic disabled:opacity-50"
+                          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-semibold haptic disabled:opacity-50"
                         >
                           <CheckCircle2 size={12} />
                           {settling === key ? '...' : 'Mark paid'}

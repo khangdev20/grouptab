@@ -41,7 +41,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-dvh">
-        <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -70,7 +70,7 @@ export default function ProfilePage() {
           <div className="px-4 py-4 border-b border-gray-100 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
                   <span className="text-base">💸</span>
                 </div>
                 <span className="text-sm font-medium text-gray-900 dark:text-white">GroupTab</span>

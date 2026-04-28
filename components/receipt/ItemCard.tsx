@@ -53,7 +53,7 @@ export default function ItemCard({
             className={cn(
               'text-xs px-2 py-1 rounded-full border font-medium haptic transition-colors',
               item.excluded
-                ? 'border-indigo-300 text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                ? 'border-emerald-300 text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                 : 'border-gray-300 dark:border-neutral-600 text-gray-500 dark:text-gray-400'
             )}
           >

@@ -47,55 +47,34 @@ export default function GroupSettingsPage() {
     const email = inviteEmail.trim().toLowerCase()
     if (!email) return
     setInviting(true)
-    const supabase = createClient()
 
-    // Find profile by email
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .eq('email', email)
-      .single()
+    try {
+      const res = await fetch('/api/add-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, groupId }),
+      })
+      const data = await res.json()
 
-    if (profileError || !profile) {
-      toast.error('No account found with that email')
-      setInviting(false)
-      return
+      if (!res.ok) {
+        toast.error(data.error ?? 'Failed to add member')
+        setInviting(false)
+        return
+      }
+
+      toast.success(`${data.name} added to group!`)
+      setInviteEmail('')
+
+      // Refresh members list
+      const supabase = createClient()
+      const { data: mems } = await supabase
+        .from('group_members')
+        .select('user_id, role, profiles(*)')
+        .eq('group_id', groupId)
+      if (mems) setMembers(mems.map((m: any) => ({ profile: m.profiles, role: m.role })).filter((m: any) => m.profile))
+    } catch {
+      toast.error('Network error, please try again')
     }
-
-    // Check if already a member
-    const { data: existing } = await supabase
-      .from('group_members')
-      .select('user_id')
-      .eq('group_id', groupId)
-      .eq('user_id', profile.id)
-      .single()
-
-    if (existing) {
-      toast.error('This person is already in the group')
-      setInviting(false)
-      return
-    }
-
-    // Add member
-    const { error: insertError } = await supabase
-      .from('group_members')
-      .insert({ group_id: groupId, user_id: profile.id, role: 'member' })
-
-    if (insertError) {
-      toast.error('Failed to add member')
-      setInviting(false)
-      return
-    }
-
-    toast.success(`${profile.name} added to group!`)
-    setInviteEmail('')
-
-    // Refresh members list
-    const { data: mems } = await supabase
-      .from('group_members')
-      .select('user_id, role, profiles(*)')
-      .eq('group_id', groupId)
-    if (mems) setMembers(mems.map((m: any) => ({ profile: m.profiles, role: m.role })).filter((m: any) => m.profile))
 
     setInviting(false)
   }
@@ -108,7 +87,7 @@ export default function GroupSettingsPage() {
     router.push('/groups')
   }
 
-  if (loading) return <div className="flex items-center justify-center h-dvh"><div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-dvh"><div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-neutral-950">
@@ -133,8 +112,8 @@ export default function GroupSettingsPage() {
         {/* Invite via link */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
           <button onClick={copyInviteLink} className="w-full flex items-center gap-3 px-4 py-4 haptic">
-            <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-              <UserPlus size={16} className="text-indigo-500" />
+            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+              <UserPlus size={16} className="text-emerald-500" />
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Invite via link</p>
@@ -147,8 +126,8 @@ export default function GroupSettingsPage() {
         {/* Add by email */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden px-4 py-4">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center flex-shrink-0">
-              <Mail size={16} className="text-indigo-500" />
+            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+              <Mail size={16} className="text-emerald-500" />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Add by email</p>
@@ -162,12 +141,12 @@ export default function GroupSettingsPage() {
               onChange={(e) => setInviteEmail(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
               placeholder="friend@example.com"
-              className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             />
             <button
               onClick={handleAddByEmail}
               disabled={inviting || !inviteEmail.trim()}
-              className="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white text-sm font-semibold rounded-xl transition-colors haptic flex items-center gap-1.5"
+              className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white text-sm font-semibold rounded-xl transition-colors haptic flex items-center gap-1.5"
             >
               {inviting ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -179,8 +158,8 @@ export default function GroupSettingsPage() {
         {/* Recurring payments */}
         <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
           <Link href={`/groups/${groupId}/recurring`} className="w-full flex items-center gap-3 px-4 py-4 haptic">
-            <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
-              <RefreshCw size={16} className="text-indigo-500" />
+            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+              <RefreshCw size={16} className="text-emerald-500" />
             </div>
             <div className="flex-1 text-left">
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Recurring payments</p>
@@ -199,7 +178,7 @@ export default function GroupSettingsPage() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{profile.id === currentUserId ? 'You' : profile.name}</p>
                 </div>
-                {role === 'admin' && <span className="text-xs text-indigo-500 font-semibold bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full">Admin</span>}
+                {role === 'admin' && <span className="text-xs text-emerald-500 font-semibold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin</span>}
               </div>
             ))}
           </div>

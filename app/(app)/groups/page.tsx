@@ -44,7 +44,7 @@ export default function GroupsPage() {
           </div>
           <Link
             href="/groups/new"
-            className="anim-scale-in w-9 h-9 bg-indigo-500 rounded-full flex items-center justify-center haptic shadow-sm shadow-indigo-200 dark:shadow-none"
+            className="anim-scale-in w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center haptic shadow-sm shadow-emerald-200 dark:shadow-none"
           >
             <Plus size={18} className="text-white" />
           </Link>
@@ -67,7 +67,7 @@ export default function GroupsPage() {
           </div>
         ) : groups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-8 text-center anim-fade-up">
-            <div className="anim-float w-20 h-20 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mb-4">
+            <div className="anim-float w-20 h-20 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
               <Logo size={48} />
             </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No groups yet</h2>
@@ -76,7 +76,7 @@ export default function GroupsPage() {
             </p>
             <Link
               href="/groups/new"
-              className="px-6 py-2.5 bg-indigo-500 text-white rounded-full text-sm font-semibold haptic shadow-md shadow-indigo-200 dark:shadow-none"
+              className="px-6 py-2.5 bg-emerald-500 text-white rounded-full text-sm font-semibold haptic shadow-md shadow-emerald-200 dark:shadow-none"
             >
               Create your first group
             </Link>
