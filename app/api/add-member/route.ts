@@ -20,17 +20,23 @@ export async function POST(request: Request) {
     .single()
   if (!membership) return NextResponse.json({ error: 'Not a group member' }, { status: 403 })
 
-  // Use admin client to find user by email
+  // Use admin client with service role key to look up user by email
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!serviceKey) {
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+  }
+
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    serviceKey
   )
 
-  // List users and find by email
-  const { data: usersData } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  const targetUser = usersData?.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+  // Direct lookup by email — much faster than listUsers
+  const { data: { user: targetUser }, error: lookupError } = await admin.auth.admin.getUserByEmail(
+    email.toLowerCase()
+  )
 
-  if (!targetUser) {
+  if (lookupError || !targetUser) {
     return NextResponse.json({ error: 'No account found with that email' }, { status: 404 })
   }
 
@@ -46,13 +52,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Already a member of this group' }, { status: 409 })
   }
 
-  // Get or create profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('name')
-    .eq('id', targetUser.id)
-    .single()
-
   // Add to group
   const { error: insertError } = await supabase
     .from('group_members')
@@ -62,9 +61,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to add member' }, { status: 500 })
   }
 
+  // Get display name from profile or fallback to metadata
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('id', targetUser.id)
+    .single()
+
   const name = profile?.name
     ?? targetUser.user_metadata?.full_name
+    ?? targetUser.user_metadata?.name
     ?? email.split('@')[0]
+
+  // Upsert their profile with email so future lookups work
+  await admin.from('profiles').upsert(
+    { id: targetUser.id, name, email: targetUser.email ?? email },
+    { onConflict: 'id', ignoreDuplicates: false }
+  )
 
   return NextResponse.json({ success: true, name })
 }
