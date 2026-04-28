@@ -57,3 +57,82 @@ body {
 
 .haptic { transition: transform 0.1s ease; }
 .haptic:active { transform: scale(0.97); }
+
+/* Animation keyframes */
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes logo-bounce {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+  55%  { opacity: 1; transform: scale(1.12) rotate(4deg); }
+  75%  { transform: scale(0.94) rotate(-2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes shimmer {
+  from { background-position: -400px 0; }
+  to   { background-position: 400px 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+/* Animation utility classes */
+.anim-fade-up    { animation: fade-in-up 0.42s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-fade-in    { animation: fade-in 0.3s ease both; }
+.anim-scale-in   { animation: scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-slide-right { animation: slide-in-right 0.38s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-slide-left  { animation: slide-in-left  0.38s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-logo       { animation: logo-bounce 0.65s cubic-bezier(0.34,1.56,0.64,1) both; }
+.anim-float      { animation: float 3s ease-in-out infinite; }
+
+/* Stagger delays */
+.delay-0   { animation-delay: 0ms; }
+.delay-50  { animation-delay: 50ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-350 { animation-delay: 350ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* Shimmer skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  .skeleton {
+    background: linear-gradient(90deg, #262626 25%, #333 50%, #262626 75%);
+    background-size: 800px 100%;
+  }
+}

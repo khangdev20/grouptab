@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Logo from '@/components/ui/Logo'
 import toast from 'react-hot-toast'
 
 export default function LoginPage() {
@@ -28,22 +29,30 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-white dark:bg-neutral-900">
-      {/* Header */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-16 h-16 rounded-2xl bg-indigo-500 flex items-center justify-center mb-6 shadow-lg">
-          <span className="text-2xl">💸</span>
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Welcome back</h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">Sign in to GroupTab</p>
 
-        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
+        {/* Logo */}
+        <div className="anim-logo mb-5">
+          <Logo size={72} />
+        </div>
+
+        {/* Wordmark */}
+        <div className="anim-fade-up delay-150 flex items-baseline gap-1.5 mb-1">
+          <span className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">GroupTab</span>
+        </div>
+        <p className="anim-fade-up delay-200 text-gray-400 dark:text-gray-500 mb-10 text-sm">
+          Split expenses, stay friends
+        </p>
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="anim-fade-up delay-300 w-full max-w-sm space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-shadow"
               placeholder="you@example.com"
               required
             />
@@ -54,7 +63,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-shadow"
               placeholder="••••••••"
               required
             />
@@ -62,19 +71,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-colors haptic"
+            className="w-full py-3 px-4 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-all haptic"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-          Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-indigo-500 font-medium">
-            Sign up
-          </Link>
-        </p>
-      </div>
-    </div>
-  )
-}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span

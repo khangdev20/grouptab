@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Logo from '@/components/ui/Logo'
 import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
@@ -48,13 +49,13 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col min-h-dvh bg-white dark:bg-neutral-900">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div className="w-16 h-16 rounded-2xl bg-indigo-500 flex items-center justify-center mb-6 shadow-lg">
-          <span className="text-2xl">💸</span>
+        <div className="anim-logo mb-5">
+          <Logo size={72} />
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Create account</h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">Join GroupTab for free</p>
+        <h1 className="anim-fade-up delay-150 text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-1">Create account</h1>
+        <p className="anim-fade-up delay-200 text-gray-400 dark:text-gray-500 mb-10 text-sm">Join GroupTab for free</p>
 
-        <form onSubmit={handleRegister} className="w-full max-w-sm space-y-4">
+        <form onSubmit={handleRegister} className="anim-fade-up delay-300 w-full max-w-sm space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Your name</label>
             <input
@@ -93,17 +94,11 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full py-3 px-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-semibold rounded-xl transition-colors haptic"
           >
-            {loading ? 'Creating account...' : 'Create account'}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Creating account…
+              </span>
+            ) : 'Create account'}
           </button>
-        </form>
-
-        <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-          Already have an account?{' '}
-          <Link href="/login" className="text-indigo-500 font-medium">
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </div>
-  )
-}
+    
