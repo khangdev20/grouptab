@@ -49,6 +49,7 @@ export default function RegisterPage() {
   return (
     <div className="flex flex-col min-h-dvh bg-white dark:bg-neutral-900">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+
         <div className="anim-logo mb-5">
           <Logo size={72} />
         </div>
@@ -97,8 +98,19 @@ export default function RegisterPage() {
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Creating account…
+                Creating account...
               </span>
             ) : 'Create account'}
           </button>
-    
+        </form>
+
+        <p className="anim-fade-up delay-400 mt-7 text-sm text-gray-400 dark:text-gray-500">
+          Already have an account?{' '}
+          <Link href="/login" className="text-indigo-500 font-semibold hover:text-indigo-600 transition-colors">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}

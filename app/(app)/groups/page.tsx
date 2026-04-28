@@ -54,7 +54,6 @@ export default function GroupsPage() {
       {/* Groups list */}
       <div className="flex-1">
         {loading ? (
-          /* Skeleton loaders */
           <div className="divide-y divide-gray-100 dark:divide-neutral-800 px-4">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex items-center gap-3 py-4">
@@ -88,8 +87,30 @@ export default function GroupsPage() {
               <Link
                 key={group.id}
                 href={`/groups/${group.id}`}
-                className="anim-fade-up flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors haptic active:scale-[0.99]"
+                className="anim-fade-up flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors haptic"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <Avatar name={group.name} size="lg" />
-                <div className="flex-1 min-
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-900 dark:text-white text-[15px] truncate">
+                      {group.name}
+                    </span>
+                    <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                      {formatDate(group.created_at)}
+                    </span>
+                  </div>
+                  {group.description && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                      {group.description}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

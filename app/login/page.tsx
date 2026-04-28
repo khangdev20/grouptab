@@ -75,4 +75,20 @@ export default function LoginPage() {
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <span
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Signing in...
+              </span>
+            ) : 'Sign in'}
+          </button>
+        </form>
+
+        <p className="anim-fade-up delay-400 mt-7 text-sm text-gray-400 dark:text-gray-500">
+          Don&apos;t have an account?{' '}
+          <Link href="/register" className="text-indigo-500 font-semibold hover:text-indigo-600 transition-colors">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
