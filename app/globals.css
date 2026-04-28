@@ -33,9 +33,11 @@ body {
 .mobile-frame {
   max-width: 430px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--background);
 }
 
@@ -58,7 +60,7 @@ body {
 .haptic { transition: transform 0.1s ease; }
 .haptic:active { transform: scale(0.97); }
 
-/* Animation keyframes */
+/* ─── Animations ─────────────────────────────── */
 
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(18px); }
@@ -102,14 +104,14 @@ body {
   50%       { transform: translateY(-6px); }
 }
 
-/* Animation utility classes */
-.anim-fade-up    { animation: fade-in-up 0.42s cubic-bezier(0.22,1,0.36,1) both; }
-.anim-fade-in    { animation: fade-in 0.3s ease both; }
-.anim-scale-in   { animation: scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+/* Animation classes */
+.anim-fade-up   { animation: fade-in-up 0.42s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-fade-in   { animation: fade-in 0.3s ease both; }
+.anim-scale-in  { animation: scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 .anim-slide-right { animation: slide-in-right 0.38s cubic-bezier(0.22,1,0.36,1) both; }
 .anim-slide-left  { animation: slide-in-left  0.38s cubic-bezier(0.22,1,0.36,1) both; }
-.anim-logo       { animation: logo-bounce 0.65s cubic-bezier(0.34,1.56,0.64,1) both; }
-.anim-float      { animation: float 3s ease-in-out infinite; }
+.anim-logo      { animation: logo-bounce 0.65s cubic-bezier(0.34,1.56,0.64,1) both; }
+.anim-float     { animation: float 3s ease-in-out infinite; }
 
 /* Stagger delays */
 .delay-0   { animation-delay: 0ms; }
