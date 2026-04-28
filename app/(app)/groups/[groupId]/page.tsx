@@ -143,7 +143,7 @@ export default function GroupFeedPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white dark:bg-neutral-900 z-50">
+    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex flex-col bg-white dark:bg-neutral-900 z-50">
       <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 pt-safe flex-shrink-0">
         <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
           <ArrowLeft size={20} />
