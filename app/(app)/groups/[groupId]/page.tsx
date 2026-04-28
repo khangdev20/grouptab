@@ -51,6 +51,7 @@ export default function GroupFeedPage() {
       setLoading(false)
       setTimeout(() => scrollToBottom(false), 100)
 
+      // Use unique channel name per mount to avoid React StrictMode double-invoke issues
       const channelName = `group-${groupId}-${Date.now()}`
       const channel = supabase.channel(channelName)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` }, (payload) => {
@@ -143,7 +144,7 @@ export default function GroupFeedPage() {
   }
 
   return (
-    <div className="flex flex-col h-dvh bg-white dark:bg-neutral-900">
+    <div className="fixed inset-0 flex flex-col bg-white dark:bg-neutral-900 z-50">
       <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 pt-safe flex-shrink-0">
         <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
           <ArrowLeft size={20} />
@@ -189,11 +190,4 @@ export default function GroupFeedPage() {
           <div className="flex-1 bg-gray-100 dark:bg-neutral-800 rounded-2xl px-4 py-2.5 flex items-end gap-2">
             <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message..." rows={1} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 resize-none outline-none max-h-24" style={{ lineHeight: '1.4' }} />
           </div>
-          <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-indigo-500 disabled:bg-indigo-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-shrink-0 haptic transition-colors">
-            <Send size={16} className="text-white" />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+          <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-indigo-500 disabled:bg-indigo-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-
