@@ -160,7 +160,7 @@ export default function GroupFeedPage() {
       await supabase.from('messages').insert({
         group_id: groupId, sender_id: currentUserId, type: 'receipt_pending',
         content: `Receipt from ${result.merchant_name || 'Unknown merchant'} — tap to review`,
-        metadata: { receipt_id: receipt.id, amount: result.total },
+        metadata: { receipt_id: receipt.id, amount: result.total, merchant_name: result.merchant_name || 'Unknown', items_count: (result.items ?? []).length, members_count: Object.keys(profiles).length },
       })
 
       toast.dismiss(toastId)
@@ -184,10 +184,42 @@ export default function GroupFeedPage() {
 
     if (msg.type === 'receipt_pending') {
       const meta = msg.metadata as any
+      const receiptAmount = meta?.amount ?? 0
+      const merchant = meta?.merchant_name ?? 'Receipt'
+      const itemsCount = meta?.items_count ?? 0
+      const membersCount = meta?.members_count ?? Object.keys(profiles).length
       return (
-        <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} my-1`}>
-          <Link href={`/groups/${groupId}/receipt/${meta?.receipt_id}`} className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-sm max-w-[75%] ${isMine ? 'bg-emerald-500 text-white rounded-br-sm' : 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white rounded-bl-sm'}`}>
-            <Receipt size={14} /><span>{msg.content}</span>
+        <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} my-2`}>
+          <Link
+            href={`/groups/${groupId}/receipt/${meta?.receipt_id}`}
+            className="block max-w-[82%] haptic"
+          >
+            <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm">
+              {/* Header */}
+              <div className="bg-emerald-500 px-3.5 py-2.5 flex items-center gap-2">
+                <Receipt size={14} className="text-white flex-shrink-0" />
+                <span className="text-white text-xs font-semibold uppercase tracking-wide">Receipt scanned</span>
+              </div>
+              {/* Body */}
+              <div className="px-3.5 py-3">
+                <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{merchant}</p>
+                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  ${receiptAmount ? Number(receiptAmount).toFixed(2) : '—'}
+                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  {itemsCount > 0 && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{itemsCount} item{itemsCount !== 1 ? 's' : ''}</span>
+                  )}
+                  {membersCount > 0 && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{membersCount} member{membersCount !== 1 ? 's' : ''}</span>
+                  )}
+                </div>
+              </div>
+              {/* CTA */}
+              <div className="border-t border-gray-100 dark:border-neutral-700 px-3.5 py-2 bg-gray-50 dark:bg-neutral-750">
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold text-center">Tap to split →</p>
+              </div>
+            </div>
           </Link>
         </div>
       )
