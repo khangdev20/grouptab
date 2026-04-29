@@ -111,6 +111,23 @@ export default function GroupFeedPage() {
     }
   }, [groupId, scrollToBottom])
 
+  // Document-level paste handler — catches iOS sticker keyboard pastes
+  // regardless of which element is focused
+  useEffect(() => {
+    const handleDocPaste = async (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items ?? [])
+      const imageItem = items.find(i => i.kind === 'file' && i.type.startsWith('image/'))
+      if (!imageItem) return
+      const file = imageItem.getAsFile()
+      if (file) {
+        e.preventDefault()
+        await sendImage(file)
+      }
+    }
+    document.addEventListener('paste', handleDocPaste)
+    return () => document.removeEventListener('paste', handleDocPaste)
+  }, [groupId, scrollToBottom])
+
   const sendMessage = async () => {
     if (!text.trim() || sending || !currentUserId) return
     setSending(true)
@@ -415,11 +432,19 @@ export default function GroupFeedPage() {
           <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
             <Plus size={18} />
           </button>
-          <button onClick={() => imageInputRef.current?.click()} disabled={sendingImage} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic disabled:opacity-50">
-            {sendingImage ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <ImageIcon size={18} />}
-          </button>
-          {/* Image / sticker picker — no capture, shows full iOS photo library + stickers */}
-          <input ref={imageInputRef} type="file" accept="image/*,image/gif,image/webp" style={{ position: 'absolute', opacity: 0, width: 1, height: 1, overflow: 'hidden' }} onChange={handleImagePick} />
+          {/* Image / sticker picker — label wraps input for iOS compatibility */}
+          <label className={`w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic cursor-pointer ${sendingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+            {sendingImage
+              ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              : <ImageIcon size={18} />}
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*,image/gif,image/webp,image/heic,image/heif"
+              className="hidden"
+              onChange={handleImagePick}
+            />
+          </label>
           <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic">
             <Camera size={18} />
           </button>
