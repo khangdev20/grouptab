@@ -41,38 +41,74 @@ export default function GroupFeedPage() {
   }, [])
 
   useEffect(() => {
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    const fetchMessages = async () => {
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true })
+        .limit(200)
+      if (msgs) {
+        setMessages(msgs)
+        setTimeout(() => scrollToBottom(false), 50)
+      }
+    }
+
     const init = async () => {
-      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setCurrentUserId(user.id)
 
-      const { data: grp } = await supabase.from('groups').select('*').eq('id', groupId).single()
-      if (grp) setGroup(grp)
+      const [{ data: grp }, { data: members }] = await Promise.all([
+        supabase.from('groups').select('*').eq('id', groupId).single(),
+        supabase.from('group_members').select('user_id, profiles(*)').eq('group_id', groupId),
+      ])
 
-      const { data: members } = await supabase.from('group_members').select('user_id, profiles(*)').eq('group_id', groupId)
+      if (grp) setGroup(grp)
       if (members) {
         const profileMap: Record<string, Profile> = {}
         members.forEach((m: any) => { if (m.profiles) profileMap[m.user_id] = m.profiles })
         setProfiles(profileMap)
       }
 
-      const { data: msgs } = await supabase.from('messages').select('*').eq('group_id', groupId).order('created_at', { ascending: true }).limit(100)
-      if (msgs) setMessages(msgs)
+      await fetchMessages()
       setLoading(false)
-      setTimeout(() => scrollToBottom(false), 100)
 
-      const channelName = `group-${groupId}-${Date.now()}`
-      const channel = supabase.channel(channelName)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` }, (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message])
+      // Realtime subscription
+      channel = supabase
+        .channel(`group-${groupId}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `group_id=eq.${groupId}`,
+        }, (payload) => {
+          setMessages((prev) => {
+            // Avoid duplicates
+            if (prev.find((m) => m.id === (payload.new as Message).id)) return prev
+            return [...prev, payload.new as Message]
+          })
           setTimeout(() => scrollToBottom(true), 50)
         })
         .subscribe()
-
-      return () => { supabase.removeChannel(channel) }
     }
+
     init()
+
+    // Refetch when tab regains focus (user switches back from another app)
+    const onFocus = () => fetchMessages()
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') fetchMessages()
+    })
+
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [groupId, scrollToBottom])
 
   const sendMessage = async () => {
