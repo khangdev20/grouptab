@@ -17,10 +17,20 @@ export async function POST(req: NextRequest) {
   const { subscription } = await req.json()
   if (!subscription?.endpoint) return NextResponse.json({ error: 'Invalid subscription' }, { status: 400 })
 
-  await admin.from('push_subscriptions').upsert(
-    { user_id: user.id, subscription, updated_at: new Date().toISOString() },
+  const { error } = await admin.from('push_subscriptions').upsert(
+    {
+      user_id: user.id,
+      endpoint: subscription.endpoint,   // ← needed for unique constraint
+      subscription,
+      updated_at: new Date().toISOString(),
+    },
     { onConflict: 'user_id,endpoint' }
   )
+
+  if (error) {
+    console.error('[push/subscribe]', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }
