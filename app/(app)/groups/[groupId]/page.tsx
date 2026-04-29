@@ -78,8 +78,20 @@ export default function GroupFeedPage() {
     if (!text.trim() || sending || !currentUserId) return
     setSending(true)
     const supabase = createClient()
-    const { error } = await supabase.from('messages').insert({ group_id: groupId, sender_id: currentUserId, type: 'text', content: text.trim() })
+    const trimmed = text.trim()
+    const { error } = await supabase.from('messages').insert({ group_id: groupId, sender_id: currentUserId, type: 'text', content: trimmed })
     if (error) toast.error('Failed to send')
+    else {
+      const senderName = profiles[currentUserId]?.name || 'Someone'
+      const groupName = group?.name || 'your group'
+      // @mention → targeted notify; otherwise broadcast new message
+      const mentioned = trimmed.match(/@(\S+)/g)
+      if (!mentioned) {
+        pushNotify(`💬 ${senderName} in ${groupName}`, trimmed.slice(0, 100), 'message')
+      } else {
+        pushNotify(`🔔 ${senderName} mentioned you`, `In ${groupName}: ${trimmed.slice(0, 80)}`, 'mention')
+      }
+    }
     setText('')
     setSending(false)
   }
@@ -124,6 +136,8 @@ export default function GroupFeedPage() {
     })
 
     toast.success('Expense added!')
+    const paidName = profiles[expensePaidBy]?.name || 'Someone'
+    pushNotify(`💸 New expense in ${group?.name || 'your group'}`, `${paidName} added ${expenseDesc.trim()} — $${parseFloat(expenseAmount).toFixed(2)}`, 'expense')
     setExpenseDesc('')
     setExpenseAmount('')
     setExpensePaidBy('')
@@ -145,10 +159,23 @@ export default function GroupFeedPage() {
         group_id: groupId, sender_id: currentUserId, type: 'image',
         content: null, metadata: { url: publicUrl },
       })
+      const senderName = profiles[currentUserId]?.name || 'Someone'
+      pushNotify(`📷 ${senderName}`, `Sent an image in ${group?.name || 'your group'}`, 'message')
     } catch {
       toast.error('Failed to send image')
     }
     setSendingImage(false)
+  }
+
+  // ─── Push notify other group members ────────────────────────────────────
+  const pushNotify = async (title: string, body: string, tag?: string) => {
+    try {
+      await fetch('/api/push/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId, title, body, url: `/groups/${groupId}`, tag }),
+      })
+    } catch { /* best-effort */ }
   }
 
   const insertMention = (name: string) => {
