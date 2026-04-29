@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error && data.user) {
-      // Upsert profile for Google users (name comes from user_metadata)
+      // Upsert profile for OAuth users
       const name = data.user.user_metadata?.full_name
         ?? data.user.user_metadata?.name
         ?? data.user.email?.split('@')[0]
@@ -23,7 +23,9 @@ export async function GET(request: Request) {
         { onConflict: 'id', ignoreDuplicates: false }
       )
 
-      return NextResponse.redirect(`${origin}${next}`)
+      // Decode the next URL (it may be URL-encoded from the login redirect)
+      const destination = decodeURIComponent(next)
+      return NextResponse.redirect(`${origin}${destination}`)
     }
   }
 
