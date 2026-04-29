@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Logo from '@/components/ui/Logo'
 import toast from 'react-hot-toast'
 
-export default function RegisterPage() {
+function RegisterInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') || '/groups'
@@ -158,5 +159,13 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterInner />
+    </Suspense>
   )
 }
