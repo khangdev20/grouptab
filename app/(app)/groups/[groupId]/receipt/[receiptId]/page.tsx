@@ -211,7 +211,7 @@ export default function ReceiptReviewPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(9rem+env(safe-area-inset-bottom,0px))]">
         {/* Receipt image toggle */}
         {receipt?.image_url && (
           <div className="bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800">
@@ -289,7 +289,7 @@ export default function ReceiptReviewPage() {
       </div>
 
       {/* Bottom confirm bar */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 px-4 py-3 pb-safe">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 px-4 py-3 pb-safe z-[60]">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-gray-600 dark:text-gray-400">Total</span>
           <span className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(totalAmount)}</span>
