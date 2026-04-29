@@ -9,7 +9,7 @@ import ExpenseBubble from '@/components/feed/ExpenseBubble'
 import SettlementBubble from '@/components/feed/SettlementBubble'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, AtSign } from 'lucide-react'
+import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, AtSign, ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupFeedPage() {
@@ -32,6 +32,7 @@ export default function GroupFeedPage() {
   const [sendingImage, setSendingImage] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [, startTransition] = useTransition()
 
@@ -201,6 +202,13 @@ export default function GroupFeedPage() {
     }
   }
 
+  const handleImagePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await sendImage(file)
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !currentUserId) return
@@ -346,6 +354,11 @@ export default function GroupFeedPage() {
           <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
             <Plus size={18} />
           </button>
+          <button onClick={() => imageInputRef.current?.click()} disabled={sendingImage} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic disabled:opacity-50">
+            {sendingImage ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <ImageIcon size={18} />}
+          </button>
+          {/* Image / sticker picker — no capture, shows full iOS photo library + stickers */}
+          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
           <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic">
             <Camera size={18} />
           </button>
