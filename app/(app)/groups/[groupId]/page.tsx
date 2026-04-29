@@ -185,21 +185,37 @@ export default function GroupFeedPage() {
   const sendImage = async (file: File) => {
     if (!currentUserId) return
     setSendingImage(true)
+    const toastId = toast.loading('Sending…')
     try {
       const supabase = createClient()
-      const ext = file.name.split('.').pop() ?? 'jpg'
+      // Derive extension from MIME type first (more reliable on iOS)
+      const mimeExt: Record<string, string> = {
+        'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+        'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif',
+      }
+      const ext = mimeExt[file.type] ?? file.name.split('.').pop() ?? 'jpg'
       const path = `${groupId}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('chat-media').upload(path, file, { contentType: file.type })
-      if (uploadError) throw uploadError
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(path, file, { contentType: file.type, upsert: false })
+
+      if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`)
+
       const { data: { publicUrl } } = supabase.storage.from('chat-media').getPublicUrl(path)
-      await supabase.from('messages').insert({
+
+      const { error: msgError } = await supabase.from('messages').insert({
         group_id: groupId, sender_id: currentUserId, type: 'image',
         content: null, metadata: { url: publicUrl },
       })
+      if (msgError) throw new Error(`Message failed: ${msgError.message}`)
+
+      toast.dismiss(toastId)
       const senderName = profiles[currentUserId]?.name || 'Someone'
       pushNotify(`📷 ${senderName}`, `Sent an image in ${group?.name || 'your group'}`, 'message')
-    } catch {
-      toast.error('Failed to send image')
+    } catch (err: any) {
+      toast.dismiss(toastId)
+      toast.error(err?.message || 'Failed to send image')
     }
     setSendingImage(false)
   }
@@ -229,12 +245,21 @@ export default function GroupFeedPage() {
   }
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const items = Array.from(e.clipboardData.items)
-    const imageItem = items.find(item => item.type.startsWith('image/'))
+    const items = Array.from(e.clipboardData?.items ?? [])
+    // Check clipboard for image (stickers from iOS keyboard come as image/png or image/gif)
+    const imageItem = items.find(item => item.kind === 'file' && item.type.startsWith('image/'))
     if (imageItem) {
       e.preventDefault()
       const file = imageItem.getAsFile()
       if (file) await sendImage(file)
+      return
+    }
+    // Also check files directly (some iOS versions provide via .files)
+    const files = Array.from(e.clipboardData?.files ?? [])
+    const imageFile = files.find(f => f.type.startsWith('image/'))
+    if (imageFile) {
+      e.preventDefault()
+      await sendImage(imageFile)
     }
   }
 
@@ -394,7 +419,7 @@ export default function GroupFeedPage() {
             {sendingImage ? <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> : <ImageIcon size={18} />}
           </button>
           {/* Image / sticker picker — no capture, shows full iOS photo library + stickers */}
-          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImagePick} />
+          <input ref={imageInputRef} type="file" accept="image/*,image/gif,image/webp" style={{ position: 'absolute', opacity: 0, width: 1, height: 1, overflow: 'hidden' }} onChange={handleImagePick} />
           <button onClick={() => fileInputRef.current?.click()} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center text-gray-500 dark:text-gray-400 flex-shrink-0 haptic">
             <Camera size={18} />
           </button>
