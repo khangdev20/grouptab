@@ -9,7 +9,7 @@ import ExpenseBubble from '@/components/feed/ExpenseBubble'
 import SettlementBubble from '@/components/feed/SettlementBubble'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, DollarSign } from 'lucide-react'
+import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupFeedPage() {
