@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useTransition } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Group, Message, Profile } from '@/lib/types'
@@ -9,7 +9,7 @@ import ExpenseBubble from '@/components/feed/ExpenseBubble'
 import SettlementBubble from '@/components/feed/SettlementBubble'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X } from 'lucide-react'
+import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, AtSign } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupFeedPage() {
@@ -27,8 +27,13 @@ export default function GroupFeedPage() {
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expensePaidBy, setExpensePaidBy] = useState('')
   const [savingExpense, setSavingExpense] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [showMentions, setShowMentions] = useState(false)
+  const [sendingImage, setSendingImage] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [, startTransition] = useTransition()
 
   const scrollToBottom = useCallback((smooth = false) => {
     bottomRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'instant' })
@@ -124,6 +129,49 @@ export default function GroupFeedPage() {
     setExpensePaidBy('')
     setShowExpenseModal(false)
     setSavingExpense(false)
+  }
+
+  const sendImage = async (file: File) => {
+    if (!currentUserId) return
+    setSendingImage(true)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `${groupId}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage.from('chat-media').upload(path, file, { contentType: file.type })
+      if (uploadError) throw uploadError
+      const { data: { publicUrl } } = supabase.storage.from('chat-media').getPublicUrl(path)
+      await supabase.from('messages').insert({
+        group_id: groupId, sender_id: currentUserId, type: 'image',
+        content: null, metadata: { url: publicUrl },
+      })
+    } catch {
+      toast.error('Failed to send image')
+    }
+    setSendingImage(false)
+  }
+
+  const insertMention = (name: string) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const cursor = textarea.selectionStart ?? text.length
+    const before = text.slice(0, cursor)
+    const after = text.slice(cursor)
+    const atIndex = before.lastIndexOf('@')
+    const newText = before.slice(0, atIndex) + '@' + name + ' ' + after
+    setText(newText)
+    setShowMentions(false)
+    startTransition(() => { textarea.focus() })
+  }
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items)
+    const imageItem = items.find(item => item.type.startsWith('image/'))
+    if (imageItem) {
+      e.preventDefault()
+      const file = imageItem.getAsFile()
+      if (file) await sendImage(file)
+    }
   }
 
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,8 +323,41 @@ export default function GroupFeedPage() {
             <Camera size={18} />
           </button>
           <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptUpload} />
+          {/* @mention dropdown */}
+          {showMentions && (
+            <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-white dark:bg-neutral-800 rounded-2xl shadow-lg border border-gray-200 dark:border-neutral-700 overflow-hidden z-10">
+              {Object.entries(profiles)
+                .filter(([uid, p]) => uid !== currentUserId && p.name.toLowerCase().includes(mentionQuery))
+                .map(([uid, profile]) => (
+                  <button
+                    key={uid}
+                    onMouseDown={(e) => { e.preventDefault(); insertMention(profile.name) }}
+                    onTouchStart={(e) => { e.preventDefault(); insertMention(profile.name) }}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-neutral-700 text-left haptic"
+                  >
+                    <Avatar name={profile.name} size="sm" />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.name}</span>
+                  </button>
+                ))}
+            </div>
+          )}
           <div className="flex-1 bg-gray-100 dark:bg-neutral-800 rounded-2xl px-4 py-2.5 flex items-end gap-2">
-            <textarea value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message..." rows={1} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 resize-none outline-none max-h-24" style={{ lineHeight: '1.4' }} />
+            <textarea ref={textareaRef} value={text} onChange={(e) => {
+              setText(e.target.value)
+              const val = e.target.value
+              const cursor = e.target.selectionStart ?? val.length
+              const before = val.slice(0, cursor)
+              const match = before.match(/@(\w*)$/)
+              if (match) {
+                setMentionQuery(match[1].toLowerCase())
+                setShowMentions(true)
+              } else {
+                setShowMentions(false)
+              }
+            }} onKeyDown={handleKeyDown} onPaste={handlePaste} placeholder="Message… or paste sticker" rows={1} className="flex-1 bg-transparent text-sm text-gray-900 dark:text-white placeholder-gray-400 resize-none outline-none max-h-24" style={{ lineHeight: '1.4' }} />
+            <button onMouseDown={(e) => { e.preventDefault(); const t = textareaRef.current; const pos = t?.selectionStart ?? text.length; setText(text.slice(0,pos)+'@'+text.slice(pos)); setShowMentions(true); setMentionQuery(''); t?.focus() }} className="text-gray-400 hover:text-emerald-500 transition-colors haptic pb-0.5">
+              <AtSign size={15} />
+            </button>
           </div>
           <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-emerald-500 disabled:bg-emerald-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-shrink-0 haptic transition-colors">
             <Send size={16} className="text-white" />

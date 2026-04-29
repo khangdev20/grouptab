@@ -28,7 +28,7 @@ export type GroupMember = {
   profile?: Profile
 }
 
-export type MessageType = 'text' | 'expense' | 'settlement' | 'receipt_pending'
+export type MessageType = 'text' | 'expense' | 'settlement' | 'receipt_pending' | 'image'
 
 export type Message = {
   id: string
