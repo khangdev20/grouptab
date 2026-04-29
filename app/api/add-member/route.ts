@@ -63,10 +63,10 @@ export async function POST(request: Request) {
     .eq('group_id', groupId).eq('user_id', targetId).single()
   if (existing) return NextResponse.json({ error: 'Already a member of this group' }, { status: 409 })
 
-  // Add to group
-  const { error: insertError } = await supabase
+  // Add to group — use admin client to bypass RLS (we're inserting for another user)
+  const { error: insertError } = await admin
     .from('group_members').insert({ group_id: groupId, user_id: targetId, role: 'member' })
-  if (insertError) return NextResponse.json({ error: 'Failed to add member' }, { status: 500 })
+  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
 
   return NextResponse.json({ success: true, name: targetName ?? normalizedEmail.split('@')[0] })
 }
