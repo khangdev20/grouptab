@@ -114,16 +114,10 @@ export default function BalancesPage() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 gap-4 px-5 pt-5">
             <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <HandCoins className="w-10 h-10 text-green-500" />
-              </div>
               <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1.5 relative z-10">You're owed</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight relative z-10">{formatCurrency(totalOwed)}</p>
             </div>
             <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <ArrowRightLeft className="w-10 h-10 text-red-500" />
-              </div>
               <p className="text-xs font-bold text-red-500 dark:text-red-400 uppercase tracking-widest mb-1.5 relative z-10">You owe</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight relative z-10">{formatCurrency(totalOwe)}</p>
             </div>
