@@ -148,7 +148,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-area px-5 py-6 space-y-6 z-10">
+      <div className="flex-1 overflow-y-auto scroll-area px-5 py-6 flex flex-col gap-6 z-10">
         {/* Profile card */}
         {profile && (
           <div className="glass-panel rounded-3xl p-6 flex flex-col items-center text-center relative shadow-md">
@@ -222,23 +222,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Support */}
-        <div>
-          <div className="glass-panel rounded-3xl overflow-hidden">
-            <a
-              href="https://www.buymeacoffee.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center gap-4 px-5 py-4 text-amber-600 dark:text-amber-500 haptic hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors group"
-            >
-              <div className="w-11 h-11 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                <Coffee size={20} className="text-amber-500" />
-              </div>
-              <span className="text-[15px] font-bold">Buy me a coffee</span>
-            </a>
-          </div>
-        </div>
-
         {/* Sign out */}
         <div>
           <div className="glass-panel rounded-3xl overflow-hidden">
@@ -251,6 +234,21 @@ export default function ProfilePage() {
               </div>
               <span className="text-[15px] font-bold">Sign Out</span>
             </button>
+          </div>
+        </div>
+
+        {/* Support */}
+        <div className="mt-auto pt-4">
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <a
+              href="https://www.buymeacoffee.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-3 px-5 py-4 text-amber-600 dark:text-amber-500 haptic hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors group"
+            >
+              <Coffee size={20} className="text-amber-500 group-hover:scale-110 transition-transform" />
+              <span className="text-[15px] font-bold">Buy me a coffee</span>
+            </a>
           </div>
         </div>
       </div>
