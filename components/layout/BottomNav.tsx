@@ -16,10 +16,9 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 pointer-events-none"
-         style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-      <div className="mx-4 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border border-gray-200/50 dark:border-neutral-800/50 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] pointer-events-auto">
-        <div className="flex items-center justify-around px-2 py-2">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border-t border-gray-200/50 dark:border-neutral-800/50 shadow-[0_-8px_32px_rgba(0,0,0,0.04)]"
+         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="flex items-center justify-around px-2 py-2">
           {tabs.map(({ href, icon: Icon, label }) => {
             const isActive = pathname === href || (href !== '/' && pathname.startsWith(href) && href !== '/groups' ? true : pathname === href)
             const isGroupsActive = href === '/groups' && pathname.startsWith('/groups')
@@ -44,7 +43,6 @@ export default function BottomNav() {
             )
           })}
         </div>
-      </div>
     </nav>
   )
 }
