@@ -128,8 +128,15 @@ export default function GroupBalancesPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16 z-10">
-          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex-1 px-5 pt-5 space-y-6 z-10 w-full">
+          <div>
+            <div className="h-3.5 w-24 bg-gray-200 dark:bg-neutral-800 rounded-md animate-pulse mb-4 ml-1" />
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-[76px] glass-panel bg-gray-200/50 dark:bg-neutral-800/50 rounded-3xl animate-pulse" />
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto scroll-area px-5 py-5 space-y-6 z-10">

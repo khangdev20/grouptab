@@ -106,8 +106,31 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-dvh">
-        <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="absolute top-[-10%] left-[-20%] w-[400px] h-[400px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+        <div className="absolute bottom-[20%] right-[-10%] w-[300px] h-[300px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+
+        <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
+          <div className="py-3.5">
+            <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">Profile</h1>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 z-10">
+          {/* Profile card skeleton */}
+          <div className="glass-panel rounded-3xl p-6 flex flex-col items-center text-center shadow-md animate-pulse">
+            <div className="w-20 h-20 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 mb-4" />
+            <div className="h-6 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded mb-2" />
+            <div className="h-4 w-48 bg-gray-200/60 dark:bg-neutral-800/60 rounded" />
+          </div>
+
+          <div className="space-y-3">
+            <div className="h-3 w-16 bg-gray-200 dark:bg-neutral-800 rounded ml-1 animate-pulse" />
+            <div className="glass-panel rounded-3xl h-[76px] animate-pulse bg-gray-200/50 dark:bg-neutral-800/50" />
+          </div>
+          
+          <div className="glass-panel rounded-3xl h-[76px] animate-pulse bg-gray-200/50 dark:bg-neutral-800/50" />
+        </div>
       </div>
     )
   }
@@ -196,6 +219,23 @@ export default function ProfilePage() {
                 <span className="text-sm font-semibold text-gray-400 bg-gray-100 dark:bg-neutral-800 px-3 py-1 rounded-full">v1.0.0</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Support */}
+        <div>
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <a
+              href="https://www.buymeacoffee.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-4 px-5 py-4 text-amber-600 dark:text-amber-500 haptic hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors group"
+            >
+              <div className="w-11 h-11 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                <span className="text-xl">☕</span>
+              </div>
+              <span className="text-[15px] font-bold">Buy me a coffee</span>
+            </a>
           </div>
         </div>
 

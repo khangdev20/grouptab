@@ -80,8 +80,13 @@ export default function JoinGroupPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-dvh bg-white dark:bg-neutral-900">
-        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col min-h-dvh bg-white dark:bg-neutral-900 items-center justify-center px-6">
+        <div className="w-full max-w-sm text-center flex flex-col items-center animate-pulse">
+          <div className="w-20 h-20 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 mb-4" />
+          <div className="h-6 w-48 bg-gray-200/60 dark:bg-neutral-800/60 rounded mb-2" />
+          <div className="h-4 w-64 bg-gray-200/60 dark:bg-neutral-800/60 rounded mb-8" />
+          <div className="h-12 w-full bg-gray-200/60 dark:bg-neutral-800/60 rounded-xl" />
+        </div>
       </div>
     )
   }

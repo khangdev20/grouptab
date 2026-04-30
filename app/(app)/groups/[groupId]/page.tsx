@@ -87,10 +87,10 @@ export default function GroupFeedPage() {
         .select('*')
         .eq('group_id', groupId)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(30)
       if (msgs) {
         setMessages(msgs.reverse())
-        setHasMore(msgs.length === 20)
+        setHasMore(msgs.length === 30)
         setTimeout(() => scrollToBottom(false), 50)
       }
     }
@@ -185,10 +185,10 @@ export default function GroupFeedPage() {
       .eq('group_id', groupId)
       .lt('created_at', oldestMessageDate)
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(30)
 
     if (msgs) {
-      if (msgs.length < 20) setHasMore(false)
+      if (msgs.length < 30) setHasMore(false)
       const scrollElement = scrollAreaRef.current
       const prevScrollHeight = scrollElement?.scrollHeight ?? 0
 
@@ -578,7 +578,14 @@ export default function GroupFeedPage() {
         }
       }}>
         {loading ? (
-          <div className="flex justify-center py-8"><div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex flex-col gap-4 py-4 px-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className={`flex items-end gap-2 ${i % 2 === 0 ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className="w-7 h-7 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse flex-shrink-0" />
+                <div className={`h-12 rounded-2xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse ${i % 2 === 0 ? 'rounded-br-sm w-48' : 'rounded-bl-sm w-32'}`} />
+              </div>
+            ))}
+          </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center px-6">
             <span className="text-4xl mb-3">👋</span>
@@ -588,7 +595,11 @@ export default function GroupFeedPage() {
           <div className="space-y-1">
             {loadingMore && (
               <div className="flex justify-center py-4">
-                <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <div className="flex gap-1.5 items-center bg-gray-100 dark:bg-neutral-800 px-3 py-2 rounded-full">
+                  <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             )}
             {messages.map((msg, idx) => renderMessage(msg, idx))}

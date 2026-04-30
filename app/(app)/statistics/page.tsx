@@ -175,7 +175,10 @@ export default function StatisticsPage() {
         
         <div className="glass-panel p-6 rounded-3xl mb-6 flex flex-col items-center justify-center min-h-[160px]">
           {loading ? (
-            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-4 w-20 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse" />
+              <div className="h-10 w-40 bg-gray-200/60 dark:bg-neutral-800/60 rounded-xl animate-pulse" />
+            </div>
           ) : (
             <>
               <p className="text-gray-500 dark:text-gray-400 font-medium mb-1">Total Spent</p>
@@ -186,33 +189,39 @@ export default function StatisticsPage() {
 
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">By Category</h2>
         <div className="space-y-3">
-          {categories.map(cat => {
-            const amount = categoryTotals[cat.id] || 0
-            const percentage = totalSpent > 0 ? (amount / totalSpent) * 100 : 0
-            
-            return (
-              <div key={cat.id} className="glass-panel p-4 rounded-2xl flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${cat.color}`}>
-                      {cat.icon}
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="glass-panel p-4 rounded-2xl flex flex-col gap-3 h-[84px] bg-gray-200/50 dark:bg-neutral-800/50 animate-pulse" />
+            ))
+          ) : (
+            categories.map(cat => {
+              const amount = categoryTotals[cat.id] || 0
+              const percentage = totalSpent > 0 ? (amount / totalSpent) * 100 : 0
+              
+              return (
+                <div key={cat.id} className="glass-panel p-4 rounded-2xl flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${cat.color}`}>
+                        {cat.icon}
+                      </div>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{cat.label}</span>
                     </div>
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{cat.label}</span>
+                    <div className="flex flex-col items-end">
+                      <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(amount)}</span>
+                      <span className="text-xs font-medium text-gray-400">{percentage.toFixed(1)}%</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(amount)}</span>
-                    <span className="text-xs font-medium text-gray-400">{percentage.toFixed(1)}%</span>
+                  <div className="w-full h-1.5 bg-gray-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-emerald-500 transition-all duration-500 ease-out rounded-full"
+                      style={{ width: `${percentage}%` }}
+                    />
                   </div>
                 </div>
-                <div className="w-full h-1.5 bg-gray-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-emerald-500 transition-all duration-500 ease-out rounded-full"
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </div>
     </div>

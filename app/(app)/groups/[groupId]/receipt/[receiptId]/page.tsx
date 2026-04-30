@@ -8,7 +8,7 @@ import ItemCard from '@/components/receipt/ItemCard'
 import Avatar from '@/components/ui/Avatar'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Receipt } from 'lucide-react'
 import Link from 'next/link'
 
 interface ItemState extends OCRItem {
@@ -187,13 +187,42 @@ export default function ReceiptReviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-dvh">
-        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="absolute top-[-10%] left-[-20%] w-[400px] h-[400px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+        <div className="absolute bottom-[20%] right-[-10%] w-[300px] h-[300px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+
+        <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
+          <div className="flex items-center gap-4 py-3.5">
+            <div className="w-10 h-10 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />
+            <div>
+              <div className="h-5 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse mb-1.5" />
+              <div className="h-3 w-20 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 px-5 pt-5 space-y-6 z-10 w-full">
+          <div className="glass-panel rounded-3xl p-5 space-y-5 animate-pulse">
+            <div className="h-10 w-full bg-gray-200/50 dark:bg-neutral-800/50 rounded-2xl" />
+            <div className="h-10 w-full bg-gray-200/50 dark:bg-neutral-800/50 rounded-2xl" />
+            <div className="flex gap-2">
+              <div className="h-8 w-20 bg-gray-200/50 dark:bg-neutral-800/50 rounded-xl" />
+              <div className="h-8 w-20 bg-gray-200/50 dark:bg-neutral-800/50 rounded-xl" />
+            </div>
+          </div>
+          <div>
+            <div className="h-3.5 w-16 bg-gray-200/60 dark:bg-neutral-800/60 rounded mb-3 animate-pulse ml-1" />
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="glass-panel rounded-3xl h-[84px] bg-gray-200/50 dark:bg-neutral-800/50 animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
-  return (
   return (
     <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {/* Background glowing effects */}
@@ -219,7 +248,7 @@ export default function ReceiptReviewPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto scroll-area pb-[calc(7rem+env(safe-area-inset-bottom,0px))] z-10 px-5 pt-5 space-y-6">
-        
+
         {/* Receipt image toggle */}
         {receipt?.image_url && (
           <div className="glass-panel rounded-3xl overflow-hidden shadow-sm">
@@ -293,11 +322,10 @@ export default function ReceiptReviewPage() {
                 <button
                   key={m.id}
                   onClick={() => setPaidBy(m.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold haptic transition-all shadow-sm ${
-                    paidBy === m.id
-                      ? 'bg-emerald-500 text-white shadow-emerald-500/20 scale-[1.02]'
-                      : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700/50'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold haptic transition-all shadow-sm ${paidBy === m.id
+                    ? 'bg-emerald-500 text-white shadow-emerald-500/20 scale-[1.02]'
+                    : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700/50'
+                    }`}
                 >
                   <Avatar name={m.name} size="sm" className="!w-5 !h-5 !text-[10px] shadow-sm" />
                   {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}

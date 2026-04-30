@@ -65,7 +65,27 @@ export default function GroupSettingsPage() {
     setPushLoading(false)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-dvh"><div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-full bg-gray-50 dark:bg-neutral-950">
+        <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
+          <div className="flex items-center gap-3 py-4">
+            <div className="w-9 h-9 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />
+            <div className="h-5 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="flex-1 px-4 py-5 space-y-5 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex flex-col items-center text-center animate-pulse">
+            <div className="w-20 h-20 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 mb-3" />
+            <div className="h-5 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded" />
+          </div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white dark:bg-neutral-900 rounded-2xl h-[72px] animate-pulse bg-gray-200/40 dark:bg-neutral-800/40" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col min-h-full bg-gray-50 dark:bg-neutral-950">
