@@ -569,9 +569,12 @@ export default function GroupFeedPage() {
   }
 
   return (
-    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex flex-col bg-white dark:bg-neutral-900 z-[60]">
-      <div className="flex items-center gap-3 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex-shrink-0">
-        <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
+    <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex flex-col bg-gray-50/50 dark:bg-neutral-950 z-[60] overflow-hidden">
+      <div className="absolute top-[-10%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/15 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[20%] left-[-10%] w-[250px] h-[250px] bg-teal-400/15 dark:bg-teal-600/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
+
+      <div className="flex items-center gap-3 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 border-b border-gray-200/50 dark:border-neutral-800/50 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl flex-shrink-0 z-20">
+        <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-neutral-800/50 haptic transition-colors">
           <ArrowLeft size={20} />
         </Link>
         {group && <Avatar name={group.name} imageUrl={group.avatar_url} size="md" />}
@@ -592,7 +595,7 @@ export default function GroupFeedPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4 scroll-area" ref={scrollAreaRef} onScroll={(e) => {
+      <div className="flex-1 overflow-y-auto px-3 py-4 scroll-area z-10" ref={scrollAreaRef} onScroll={(e) => {
         if (e.currentTarget.scrollTop < 150 && hasMore && !loadingMore) {
           loadMoreMessages()
         }
@@ -628,7 +631,7 @@ export default function GroupFeedPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex-shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+      <div className="flex-shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-gray-200/50 dark:border-neutral-800/50 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl z-20">
         <div className="flex items-end gap-2">
           <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setInvolvedMembers(Object.keys(profiles)); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
             <Plus size={18} />
