@@ -7,7 +7,7 @@ import { Balance, Debt, Profile } from '@/lib/types'
 import { calculateBalances, simplifyDebts, formatCurrency } from '@/lib/utils'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, ArrowRight, CheckCircle2, PartyPopper } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, PartyPopper, Bell } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupBalancesPage() {
@@ -20,6 +20,8 @@ export default function GroupBalancesPage() {
   const [loading, setLoading] = useState(true)
   const [settling, setSettling] = useState<string | null>(null)
   const [pendingSettlements, setPendingSettlements] = useState<any[]>([])
+  // remindMap: key = `${debtorId}-${creditorId}`, value = { count, windowStart }
+  const [remindMap, setRemindMap] = useState<Record<string, { count: number; windowStart: number }>>({}
 
   useEffect(() => {
     const init = async () => {
@@ -55,6 +57,68 @@ export default function GroupBalancesPage() {
     }
     init()
   }, [groupId])
+
+  // Load remind state from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`remind-${groupId}`)
+      if (raw) setRemindMap(JSON.parse(raw))
+    } catch {}
+  }, [groupId])
+
+  // Max 2 reminds per 48h per debtor-creditor pair
+  const REMIND_LIMIT = 2
+  const WINDOW_MS = 48 * 60 * 60 * 1000
+
+  const getRemindState = (debt: Debt) => {
+    const key = `${debt.from}-${debt.to}`
+    const entry = remindMap[key]
+    if (!entry) return { count: 0, canRemind: true, remaining: REMIND_LIMIT }
+    const elapsed = Date.now() - entry.windowStart
+    if (elapsed >= WINDOW_MS) return { count: 0, canRemind: true, remaining: REMIND_LIMIT }
+    return { count: entry.count, canRemind: entry.count < REMIND_LIMIT, remaining: REMIND_LIMIT - entry.count }
+  }
+
+  const handleRemind = async (debt: Debt) => {
+    if (!currentUserId) return
+    const key = `${debt.from}-${debt.to}`
+    const { canRemind } = getRemindState(debt)
+    if (!canRemind) {
+      toast.error('You can only send 2 reminders per 48 hours')
+      return
+    }
+
+    const debtorProfile = profiles[debt.from]
+    const creditorProfile = profiles[currentUserId]
+
+    try {
+      await fetch('/api/push/remind-debt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          debtorId: debt.from,
+          creditorName: creditorProfile?.name?.split(' ')[0] ?? 'Someone',
+          amount: formatCurrency(debt.amount),
+          groupId,
+          groupName: 'the group',
+        }),
+      })
+    } catch {}
+
+    // Update rate limit state
+    const now = Date.now()
+    const existing = remindMap[key]
+    const inWindow = existing && (now - existing.windowStart) < WINDOW_MS
+    const newEntry = {
+      count: inWindow ? existing.count + 1 : 1,
+      windowStart: inWindow ? existing.windowStart : now,
+    }
+    const updated = { ...remindMap, [key]: newEntry }
+    setRemindMap(updated)
+    try { localStorage.setItem(`remind-${groupId}`, JSON.stringify(updated)) } catch {}
+
+    toast.success(`Reminder sent to ${debtorProfile?.name?.split(' ')[0] ?? 'them'}!`)
+  }
 
   const handleSettle = async (debt: Debt) => {
     if (!currentUserId) return
@@ -272,16 +336,34 @@ export default function GroupBalancesPage() {
                             {settling === key ? '...' : 'Mark Paid'}
                           </button>
                         )}
-                        {toIsMe && (
-                          <button
-                            onClick={() => handleSettle({ ...debt, amount: remainingDebt })}
-                            disabled={settling === key}
-                            className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                          >
-                            <CheckCircle2 size={16} />
-                            {settling === key ? '...' : 'Confirm Received'}
-                          </button>
-                        )}
+                        {toIsMe && (() => {
+                          const { canRemind, remaining } = getRemindState(debt)
+                          return (
+                            <>
+                              <button
+                                onClick={() => handleRemind(debt)}
+                                disabled={!canRemind}
+                                title={canRemind ? `Remind ${from?.name} (${remaining} left)` : 'Reminder limit reached for 48h'}
+                                className={`py-2.5 px-3.5 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${
+                                  canRemind
+                                    ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100'
+                                    : 'bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                }`}
+                              >
+                                <Bell size={15} />
+                                <span>{remaining}/2</span>
+                              </button>
+                              <button
+                                onClick={() => handleSettle({ ...debt, amount: remainingDebt })}
+                                disabled={settling === key}
+                                className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                <CheckCircle2 size={16} />
+                                {settling === key ? '...' : 'Confirm Received'}
+                              </button>
+                            </>
+                          )
+                        })()}
                       </div>
                     </div>
                   )
