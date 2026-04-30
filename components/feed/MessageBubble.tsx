@@ -37,9 +37,10 @@ export default function MessageBubble({ message, sender, isMine, showAvatar, sho
 
   const isImage = message.type === 'image'
   const imageUrl = isImage ? (message.metadata as any)?.url : null
+  const isPending = !!(message.metadata as any)?._pending
 
   return (
-    <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+    <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} ${isPending ? 'opacity-60' : ''} transition-opacity`}>
       <div className={`flex items-end gap-[10px] w-full ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
         {!isMine && (
           <div className="w-7 flex-shrink-0">
@@ -121,8 +122,13 @@ export default function MessageBubble({ message, sender, isMine, showAvatar, sho
       </div>
 
       {showTime && (
-        <span className={`text-[9px] text-gray-400 font-medium mt-0.5 tracking-wide ${isMine ? 'mr-1' : 'ml-[39px]'}`}>
-          {formatDate(message.created_at)}
+        <span className={`flex items-center gap-1 text-[9px] text-gray-400 font-medium mt-0.5 tracking-wide ${isMine ? 'mr-1' : 'ml-[39px]'}`}>
+          {isPending ? (
+            <svg className="animate-spin" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          ) : null}
+          {isPending ? 'Sending…' : formatDate(message.created_at)}
         </span>
       )}
     </div>

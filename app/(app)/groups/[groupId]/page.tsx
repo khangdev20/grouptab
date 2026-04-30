@@ -209,16 +209,38 @@ export default function GroupFeedPage() {
 
   const sendMessage = async () => {
     if (!text.trim() || sending || !currentUserId) return
-    setSending(true)
-    const supabase = createClient()
     const trimmed = text.trim()
-    const { error } = await supabase.from('messages').insert({ group_id: groupId, sender_id: currentUserId, type: 'text', content: trimmed })
-    
-    if (error) toast.error('Failed to send')
-    else {
+    setText('')
+    setSending(true)
+
+    // Optimistic: insert fake message immediately
+    const tempId = `optimistic-${Date.now()}`
+    const optimisticMsg: Message = {
+      id: tempId,
+      group_id: groupId,
+      sender_id: currentUserId,
+      type: 'text',
+      content: trimmed,
+      metadata: { _pending: true },
+      created_at: new Date().toISOString(),
+    }
+    setMessages(prev => [...prev, optimisticMsg])
+    setTimeout(() => scrollToBottom(true), 50)
+
+    const supabase = createClient()
+    const { error } = await supabase.from('messages').insert({
+      group_id: groupId, sender_id: currentUserId, type: 'text', content: trimmed
+    })
+
+    if (error) {
+      // Roll back optimistic message
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      toast.error('Failed to send')
+    } else {
+      // Remove optimistic — realtime will add the real one
+      setMessages(prev => prev.filter(m => m.id !== tempId))
       const senderName = profiles[currentUserId]?.name || 'Someone'
       const groupName = group?.name || 'your group'
-      // @mention → targeted notify; otherwise broadcast new message
       const mentioned = trimmed.match(/@(\S+)/g)
       if (!mentioned) {
         pushNotify(`${senderName} in ${groupName}`, trimmed.slice(0, 100), 'message')
@@ -226,7 +248,6 @@ export default function GroupFeedPage() {
         pushNotify(`${senderName} mentioned you`, `In ${groupName}: ${trimmed.slice(0, 80)}`, 'mention')
       }
     }
-    setText('')
     setSending(false)
   }
 
@@ -308,10 +329,24 @@ export default function GroupFeedPage() {
   const sendImage = async (file: File) => {
     if (!currentUserId) return
     setSendingImage(true)
-    const toastId = toast.loading('Sending…')
+
+    // Optimistic: show local blob URL immediately
+    const blobUrl = URL.createObjectURL(file)
+    const tempId = `optimistic-img-${Date.now()}`
+    const optimisticMsg: Message = {
+      id: tempId,
+      group_id: groupId,
+      sender_id: currentUserId,
+      type: 'image',
+      content: null,
+      metadata: { url: blobUrl, _pending: true },
+      created_at: new Date().toISOString(),
+    }
+    setMessages(prev => [...prev, optimisticMsg])
+    setTimeout(() => scrollToBottom(true), 50)
+
     try {
       const supabase = createClient()
-      // Derive extension from MIME type first (more reliable on iOS)
       const mimeExt: Record<string, string> = {
         'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
         'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif',
@@ -333,11 +368,16 @@ export default function GroupFeedPage() {
       })
       if (msgError) throw new Error(`Message failed: ${msgError.message}`)
 
-      toast.dismiss(toastId)
+      // Remove optimistic — realtime will add the real one with actual URL
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      URL.revokeObjectURL(blobUrl)
+
       const senderName = profiles[currentUserId]?.name || 'Someone'
       pushNotify(`${senderName}`, `Sent an image in ${group?.name || 'your group'}`, 'message')
     } catch (err: any) {
-      toast.dismiss(toastId)
+      // Roll back optimistic message
+      setMessages(prev => prev.filter(m => m.id !== tempId))
+      URL.revokeObjectURL(blobUrl)
       toast.error(err?.message || 'Failed to send image')
     }
     setSendingImage(false)
