@@ -41,20 +41,20 @@ export default function StatisticsPage() {
   }, [])
 
   const filteredData = useMemo(() => {
-    const now = new Date()
+    const today = new Date()
     let startDate = new Date()
 
     if (period === 'week') {
-      const day = now.getDay()
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
-      startDate = new Date(now.setDate(diff))
+      const day = today.getDay()
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
+      startDate = new Date(today.setDate(diff))
       startDate.setHours(0, 0, 0, 0)
       return data.filter(item => new Date(item.expenses.created_at) >= startDate)
     } else if (period === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1)
       return data.filter(item => new Date(item.expenses.created_at) >= startDate)
     } else if (period === 'year') {
-      startDate = new Date(now.getFullYear(), 0, 1)
+      startDate = new Date(today.getFullYear(), 0, 1)
       return data.filter(item => new Date(item.expenses.created_at) >= startDate)
     } else if (period === 'custom') {
       let filtered = data
@@ -73,6 +73,58 @@ export default function StatisticsPage() {
 
     return data
   }, [data, period, customStart, customEnd])
+
+  const chartData = useMemo(() => {
+    if (period === 'custom') return null
+
+    const result = [
+      { label: '', amount: 0, isCurrent: false },
+      { label: '', amount: 0, isCurrent: false },
+      { label: '', amount: 0, isCurrent: false },
+      { label: '', amount: 0, isCurrent: true },
+    ]
+
+    for (let i = 3; i >= 0; i--) {
+      let start = new Date()
+      let end = new Date()
+      let label = ''
+
+      if (period === 'week') {
+        const today = new Date()
+        const day = today.getDay()
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1) - (i * 7)
+        start = new Date(today.setDate(diff))
+        start.setHours(0, 0, 0, 0)
+        end = new Date(start)
+        end.setDate(start.getDate() + 6)
+        end.setHours(23, 59, 59, 999)
+        label = i === 0 ? 'This Wk' : i === 1 ? 'Last Wk' : `${i} Wks Ago`
+      } else if (period === 'month') {
+        const today = new Date()
+        start = new Date(today.getFullYear(), today.getMonth() - i, 1)
+        end = new Date(today.getFullYear(), today.getMonth() - i + 1, 0)
+        end.setHours(23, 59, 59, 999)
+        label = start.toLocaleString('default', { month: 'short' })
+      } else if (period === 'year') {
+        const today = new Date()
+        start = new Date(today.getFullYear() - i, 0, 1)
+        end = new Date(today.getFullYear() - i, 11, 31)
+        end.setHours(23, 59, 59, 999)
+        label = `${today.getFullYear() - i}`
+      }
+
+      const amount = data
+        .filter(item => {
+          const d = new Date(item.expenses.created_at)
+          return d >= start && d <= end
+        })
+        .reduce((sum, item) => sum + item.amount, 0)
+
+      result[3 - i] = { label, amount, isCurrent: i === 0 }
+    }
+
+    return result
+  }, [data, period])
 
   const categoryTotals = useMemo(() => {
     const totals: Record<string, number> = {
@@ -106,6 +158,7 @@ export default function StatisticsPage() {
   ]
 
   const totalSpent = Object.values(categoryTotals).reduce((a, b) => a + b, 0)
+  const maxChartAmount = chartData ? Math.max(...chartData.map(d => d.amount), 1) : 1
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
@@ -176,14 +229,39 @@ export default function StatisticsPage() {
         
         <div className="glass-panel p-6 rounded-3xl mb-6 flex flex-col items-center justify-center min-h-[160px]">
           {loading ? (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-3 w-full">
               <div className="h-4 w-20 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse" />
               <div className="h-10 w-40 bg-gray-200/60 dark:bg-neutral-800/60 rounded-xl animate-pulse" />
+              <div className="h-24 w-full bg-gray-200/60 dark:bg-neutral-800/60 rounded-xl animate-pulse mt-4" />
             </div>
           ) : (
             <>
               <p className="text-gray-500 dark:text-gray-400 font-medium mb-1">Total Spent</p>
-              <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">{formatCurrency(totalSpent)}</h2>
+              <h2 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-6">{formatCurrency(totalSpent)}</h2>
+              
+              {chartData && (
+                <div className="flex items-end justify-center gap-6 w-full h-32 pt-4 border-t border-gray-100/50 dark:border-neutral-800/50">
+                  {chartData.map((d, idx) => {
+                    const heightPercent = d.amount > 0 ? Math.max((d.amount / maxChartAmount) * 100, 5) : 2 // at least 2% height so bar is visible
+                    return (
+                      <div key={idx} className="flex flex-col items-center gap-2 h-full justify-end flex-1 max-w-[60px]">
+                        <div className="w-full relative flex items-end justify-center h-full group">
+                          <div 
+                            className={`w-full rounded-md transition-all duration-500 ${d.isCurrent ? 'bg-emerald-500 shadow-sm' : 'bg-gray-200 dark:bg-neutral-800'}`}
+                            style={{ height: `${heightPercent}%` }}
+                          />
+                          <div className="absolute -top-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            {formatCurrency(d.amount)}
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${d.isCurrent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
+                          {d.label}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </>
           )}
         </div>
