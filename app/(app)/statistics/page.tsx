@@ -13,7 +13,7 @@ type ExpenseData = {
 }
 
 export default function StatisticsPage() {
-  const [period, setPeriod] = useState<'week' | 'month' | 'year' | 'custom'>('month')
+  const [period, setPeriod] = useState<'week' | 'month' | 'year' | 'custom'>('week')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
   const [data, setData] = useState<ExpenseData[]>([])
