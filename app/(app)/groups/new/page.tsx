@@ -47,49 +47,54 @@ export default function NewGroupPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="flex items-center gap-3 py-4">
-          <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden">
+      <div className="absolute top-[-10%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[20%] left-[-10%] w-[250px] h-[250px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
+
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-4 pt-safe shadow-sm">
+        <div className="flex items-center gap-3 py-3.5">
+          <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-neutral-800/50 haptic transition-colors">
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">New Group</h1>
+          <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">New Group</h1>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-area px-4 py-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto scroll-area px-4 py-6 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] z-10">
         <form onSubmit={handleCreate} className="space-y-5">
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-              Group name <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-              placeholder="Weekend trip, Roommates..."
-              required
-            />
-          </div>
+          <div className="glass-panel p-5 rounded-3xl space-y-4">
+            <div>
+              <label className="text-[13px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">
+                Group name <span className="text-emerald-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white font-semibold outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                placeholder="Weekend trip, Roommates..."
+                required
+              />
+            </div>
 
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
-              Description <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
-              placeholder="What's this group for?"
-            />
+            <div>
+              <label className="text-[13px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">
+                Description <span className="text-gray-400 font-normal normal-case tracking-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                placeholder="What's this group for?"
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading || !name.trim()}
-            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic"
+            className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 dark:disabled:bg-emerald-800/50 disabled:text-white/50 text-white font-bold text-[15px] rounded-2xl transition-colors haptic shadow-sm shadow-emerald-500/20"
           >
             {loading ? 'Creating...' : 'Create group'}
           </button>

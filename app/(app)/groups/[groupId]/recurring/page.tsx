@@ -181,27 +181,30 @@ export default function RecurringPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-neutral-950">
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden">
+      <div className="absolute top-[-10%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[20%] left-[-10%] w-[250px] h-[250px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="flex items-center justify-between py-4">
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-4 pt-safe shadow-sm">
+        <div className="flex items-center justify-between py-3.5">
           <div className="flex items-center gap-3">
-            <Link href={`/groups/${groupId}`} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
+            <Link href={`/groups/${groupId}`} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-neutral-800/50 haptic transition-colors">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Recurring</h1>
+            <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">Recurring</h1>
           </div>
-          <button onClick={() => setShowForm(true)} className="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center haptic">
+          <button onClick={() => setShowForm(true)} className="w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center haptic shadow-sm shadow-emerald-500/20">
             <Plus size={18} className="text-white" />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-area px-4 py-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto scroll-area px-4 py-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] z-10">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex gap-3 h-[104px] animate-pulse">
+              <div key={i} className="glass-panel p-4 rounded-3xl flex gap-3 h-[104px] animate-pulse">
                 <div className="w-10 h-10 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 flex-shrink-0" />
                 <div className="flex-1 space-y-2 pt-1">
                   <div className="h-4 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded" />
@@ -229,7 +232,7 @@ export default function RecurringPage() {
               const dueLabel = nextDueLabel(r.next_due_date)
               const isOverdue = r.next_due_date && new Date(r.next_due_date) < new Date()
               return (
-                <div key={r.id} className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex gap-3">
+                <div key={r.id} className="glass-panel p-4 rounded-3xl flex gap-3 group">
                   <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
                     <Bell size={18} className="text-emerald-500" />
                   </div>
@@ -264,24 +267,24 @@ export default function RecurringPage() {
 
         {/* Add form */}
         {showForm && (
-          <div className="mt-4 bg-white dark:bg-neutral-900 rounded-2xl p-4 space-y-4">
-            <h2 className="font-bold text-gray-900 dark:text-white">New Recurring Payment</h2>
+          <div className="mt-4 glass-panel p-5 rounded-3xl space-y-5">
+            <h2 className="font-bold text-[18px] text-gray-900 dark:text-white">New Recurring Payment</h2>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Title</label>
-              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Netflix, Rent, Electricity..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-sm text-gray-900 dark:text-white" />
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Title</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Netflix, Rent, Electricity..." className="w-full px-4 py-3 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner" />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Amount (AUD)</label>
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" min="0" step="0.01" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-sm text-gray-900 dark:text-white" />
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Amount (AUD)</label>
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" min="0" step="0.01" className="w-full px-4 py-3 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner" />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Frequency</label>
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Frequency</label>
               <div className="flex flex-wrap gap-2">
                 {FREQUENCIES.map((f) => (
-                  <button key={f.value} onClick={() => setFrequency(f.value)} className={`px-3 py-1.5 rounded-full text-xs font-semibold border haptic transition-colors ${frequency === f.value ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
+                  <button key={f.value} onClick={() => setFrequency(f.value)} className={`px-4 py-2 rounded-full text-[13px] font-semibold transition-colors haptic ${frequency === f.value ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-neutral-800 text-gray-600 dark:text-gray-400 shadow-sm border border-gray-100 dark:border-neutral-700'}`}>
                     {f.label}
                   </button>
                 ))}
@@ -290,10 +293,10 @@ export default function RecurringPage() {
 
             {(frequency === 'weekly' || frequency === 'fortnightly') && (
               <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Day(s) of week</label>
-                <div className="flex gap-1.5 flex-wrap">
+                <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Day(s) of week</label>
+                <div className="flex gap-2 flex-wrap">
                   {DAYS_OF_WEEK.map((d, i) => (
-                    <button key={i} onClick={() => toggleDay(i)} className={`w-10 h-10 rounded-full text-xs font-semibold haptic transition-colors ${selectedDays.includes(i) ? 'bg-emerald-500 text-white' : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400'}`}>
+                    <button key={i} onClick={() => toggleDay(i)} className={`w-11 h-11 rounded-full text-[13px] font-semibold haptic transition-colors ${selectedDays.includes(i) ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-neutral-800 text-gray-600 dark:text-gray-400 shadow-sm border border-gray-100 dark:border-neutral-700'}`}>
                       {d}
                     </button>
                   ))}
@@ -303,21 +306,21 @@ export default function RecurringPage() {
 
             {(frequency === 'monthly' || frequency === 'quarterly' || frequency === 'yearly') && (
               <div>
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Day of month</label>
-                <input type="number" value={dayOfMonth} onChange={(e) => setDayOfMonth(parseInt(e.target.value) || 1)} min="1" max="31" className="w-24 px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-sm text-gray-900 dark:text-white" />
+                <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Day of month</label>
+                <input type="number" value={dayOfMonth} onChange={(e) => setDayOfMonth(parseInt(e.target.value) || 1)} min="1" max="31" className="w-24 px-4 py-3 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner text-center" />
               </div>
             )}
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Next due date</label>
-              <input type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-sm text-gray-900 dark:text-white" />
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Next due date</label>
+              <input type="date" value={nextDue} onChange={(e) => setNextDue(e.target.value)} className="w-full px-4 py-3 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner" />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Paid by</label>
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Paid by</label>
               <div className="flex flex-wrap gap-2">
                 {members.map((m) => (
-                  <button key={m.id} onClick={() => setPayerId(m.id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium haptic ${payerId === m.id ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
+                  <button key={m.id} onClick={() => setPayerId(m.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium haptic ${payerId === m.id ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-neutral-800 text-gray-600 dark:text-gray-400 shadow-sm border border-gray-100 dark:border-neutral-700'}`}>
                     {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
                   </button>
                 ))}
@@ -325,10 +328,10 @@ export default function RecurringPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Split between</label>
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Split between</label>
               <div className="flex flex-wrap gap-2">
                 {members.map((m) => (
-                  <button key={m.id} onClick={() => toggleInvolved(m.id)} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-medium haptic ${involvedIds.includes(m.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400'}`}>
+                  <button key={m.id} onClick={() => toggleInvolved(m.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium haptic ${involvedIds.includes(m.id) ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/20' : 'bg-white dark:bg-neutral-800 text-gray-600 dark:text-gray-400 shadow-sm border border-gray-100 dark:border-neutral-700'}`}>
                     {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
                   </button>
                 ))}
@@ -336,16 +339,16 @@ export default function RecurringPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 block">Notes (optional)</label>
-              <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add a note..." className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-sm text-gray-900 dark:text-white" />
+              <label className="text-[12px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">Notes (optional)</label>
+              <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add a note..." className="w-full px-4 py-3 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner" />
             </div>
 
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-sm font-semibold text-gray-600 dark:text-gray-400 haptic">
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setShowForm(false)} className="flex-1 py-3.5 rounded-2xl bg-white dark:bg-neutral-800 text-[15px] font-bold text-gray-700 dark:text-gray-300 haptic shadow-sm border border-gray-100 dark:border-neutral-700">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving || !title.trim() || !amount} className="flex-1 py-2.5 rounded-xl bg-emerald-500 disabled:bg-emerald-300 text-white text-sm font-semibold haptic">
-                {saving ? 'Saving...' : 'Save'}
+              <button onClick={handleSave} disabled={saving || !title.trim() || !amount} className="flex-1 py-3.5 rounded-2xl bg-emerald-500 disabled:bg-emerald-300 dark:disabled:bg-emerald-800/50 disabled:text-white/50 text-white text-[15px] font-bold haptic shadow-sm shadow-emerald-500/20">
+                {saving ? 'Saving...' : 'Save Payment'}
               </button>
             </div>
           </div>
