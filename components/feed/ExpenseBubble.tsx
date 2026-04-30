@@ -32,7 +32,7 @@ export default function ExpenseBubble({ message, sender, isMine, showAvatar, sho
           )}
 
           {isMine ? (
-            <div className="glass-panel p-4 rounded-3xl w-[250px] relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-transparent dark:from-emerald-500/5 border-emerald-200/30 dark:border-emerald-500/10 shadow-sm">
+            <div className="glass-panel p-4 rounded-3xl rounded-br-sm w-[250px] relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-transparent dark:from-emerald-500/5 border-emerald-200/30 dark:border-emerald-500/10 shadow-sm">
               <div className="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-5 pointer-events-none text-emerald-600">
                 <Receipt size={100} />
               </div>
@@ -57,7 +57,7 @@ export default function ExpenseBubble({ message, sender, isMine, showAvatar, sho
               </div>
             </div>
           ) : (
-            <div className="glass-panel p-4 rounded-3xl w-[250px] relative overflow-hidden opacity-95 shadow-sm">
+            <div className="glass-panel p-4 rounded-3xl rounded-bl-sm w-[250px] relative overflow-hidden opacity-95 shadow-sm">
               <div className="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-5 pointer-events-none grayscale">
                 <Receipt size={100} />
               </div>
