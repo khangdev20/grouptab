@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
+import { Utensils, Car, ShoppingBag, Ticket, Lightbulb, Package } from 'lucide-react'
 
 type ExpenseData = {
   amount: number
@@ -96,12 +97,12 @@ export default function StatisticsPage() {
   }, [filteredData])
 
   const categories = [
-    { id: 'food_drink', label: 'Food & Drink', icon: '🍔', color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' },
-    { id: 'transport', label: 'Transport', icon: '🚕', color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' },
-    { id: 'shopping', label: 'Shopping', icon: '🛒', color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' },
-    { id: 'entertainment', label: 'Entertainment', icon: '🎟️', color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600' },
-    { id: 'bills', label: 'Bills', icon: '💡', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' },
-    { id: 'other', label: 'Other', icon: '📦', color: 'bg-gray-100 dark:bg-gray-800 text-gray-600' }
+    { id: 'food_drink', label: 'Food & Drink', icon: <Utensils size={18} />, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' },
+    { id: 'transport', label: 'Transport', icon: <Car size={18} />, color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' },
+    { id: 'shopping', label: 'Shopping', icon: <ShoppingBag size={18} />, color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' },
+    { id: 'entertainment', label: 'Entertainment', icon: <Ticket size={18} />, color: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600' },
+    { id: 'bills', label: 'Bills', icon: <Lightbulb size={18} />, color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' },
+    { id: 'other', label: 'Other', icon: <Package size={18} />, color: 'bg-gray-100 dark:bg-gray-800 text-gray-600' }
   ]
 
   const totalSpent = Object.values(categoryTotals).reduce((a, b) => a + b, 0)

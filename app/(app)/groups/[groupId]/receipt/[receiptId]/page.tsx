@@ -303,12 +303,12 @@ export default function ReceiptReviewPage() {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-[15px] font-medium focus:ring-2 focus:ring-emerald-500 shadow-inner outline-none transition-all appearance-none"
             >
-              <option value="food_drink">🍔 Food & Drink</option>
-              <option value="transport">🚕 Transport</option>
-              <option value="shopping">🛒 Shopping</option>
-              <option value="entertainment">🎟️ Entertainment</option>
-              <option value="bills">💡 Bills</option>
-              <option value="other">📦 Other</option>
+              <option value="food_drink">Food & Drink</option>
+              <option value="transport">Transport</option>
+              <option value="shopping">Shopping</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="bills">Bills</option>
+              <option value="other">Other</option>
             </select>
           </div>
 

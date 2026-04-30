@@ -7,7 +7,7 @@ import { Balance, Debt, Profile } from '@/lib/types'
 import { calculateBalances, simplifyDebts, formatCurrency } from '@/lib/utils'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, PartyPopper } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupBalancesPage() {
@@ -274,7 +274,7 @@ export default function GroupBalancesPage() {
           {debts.length === 0 && balances.every((b) => Math.abs(b.amount) < 0.01) && (
             <div className="flex flex-col items-center justify-center py-16 text-center mt-4">
               <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-5">
-                <span className="text-4xl">🎉</span>
+                <PartyPopper size={36} className="text-emerald-500" />
               </div>
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">All settled up!</h2>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-2 max-w-[220px]">

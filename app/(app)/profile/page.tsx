@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { LogOut, Moon, Sun, Bell, Edit2, Camera, Check } from 'lucide-react'
+import { LogOut, Moon, Sun, Bell, Edit2, Camera, Check, ChevronRight, Wallet, Coffee } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -212,7 +212,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                    <span className="text-xl">💸</span>
+                    <Wallet size={20} className="text-emerald-500" />
                   </div>
                   <span className="text-[15px] font-bold text-gray-900 dark:text-white">GroupTab</span>
                 </div>
@@ -232,7 +232,7 @@ export default function ProfilePage() {
               className="w-full flex items-center gap-4 px-5 py-4 text-amber-600 dark:text-amber-500 haptic hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors group"
             >
               <div className="w-11 h-11 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                <span className="text-xl">☕</span>
+                <Coffee size={20} className="text-amber-500" />
               </div>
               <span className="text-[15px] font-bold">Buy me a coffee</span>
             </a>

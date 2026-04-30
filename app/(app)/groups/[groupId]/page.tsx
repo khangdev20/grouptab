@@ -9,7 +9,7 @@ import ExpenseBubble from '@/components/feed/ExpenseBubble'
 import SettlementBubble from '@/components/feed/SettlementBubble'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, AtSign, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Settings, Camera, Send, Receipt, Scale, RefreshCw, Plus, X, AtSign, ImageIcon, Hand } from 'lucide-react'
 import Link from 'next/link'
 
 export default function GroupFeedPage() {
@@ -588,7 +588,7 @@ export default function GroupFeedPage() {
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-            <span className="text-4xl mb-3">👋</span>
+            <Hand size={48} className="text-emerald-500 mb-4 opacity-50" />
             <p className="text-sm text-gray-500 dark:text-gray-400">Say hi or upload a receipt to get started!</p>
           </div>
         ) : (
@@ -710,12 +710,12 @@ export default function GroupFeedPage() {
                   onChange={(e) => setExpenseCategory(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 >
-                  <option value="food_drink">🍔 Food & Drink</option>
-                  <option value="transport">🚕 Transport</option>
-                  <option value="shopping">🛒 Shopping</option>
-                  <option value="entertainment">🎟️ Entertainment</option>
-                  <option value="bills">💡 Bills</option>
-                  <option value="other">📦 Other</option>
+                  <option value="food_drink">Food & Drink</option>
+                  <option value="transport">Transport</option>
+                  <option value="shopping">Shopping</option>
+                  <option value="entertainment">Entertainment</option>
+                  <option value="bills">Bills</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 

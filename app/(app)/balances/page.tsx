@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
 import Avatar from '@/components/ui/Avatar'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, HandCoins, ArrowRightLeft, CheckCircle2 } from 'lucide-react'
 
 interface GroupBalance {
   group: { id: string; name: string }
@@ -115,14 +115,14 @@ export default function BalancesPage() {
           <div className="grid grid-cols-2 gap-4 px-5 pt-5">
             <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
-                <span className="text-4xl text-green-500">💰</span>
+                <HandCoins className="w-10 h-10 text-green-500" />
               </div>
               <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1.5 relative z-10">You're owed</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight relative z-10">{formatCurrency(totalOwed)}</p>
             </div>
             <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
-                <span className="text-4xl text-red-500">💸</span>
+                <ArrowRightLeft className="w-10 h-10 text-red-500" />
               </div>
               <p className="text-xs font-bold text-red-500 dark:text-red-400 uppercase tracking-widest mb-1.5 relative z-10">You owe</p>
               <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight relative z-10">{formatCurrency(totalOwe)}</p>
@@ -162,7 +162,7 @@ export default function BalancesPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-center px-6 mt-4">
               <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-5">
-                <span className="text-4xl">✅</span>
+                <CheckCircle2 size={40} className="text-emerald-500" />
               </div>
               <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">All settled up!</h2>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-2 max-w-[250px]">
