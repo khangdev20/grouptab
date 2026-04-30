@@ -144,32 +144,34 @@ export default function StatisticsPage() {
           </button>
         </div>
 
-        {period === 'custom' && (
-          <div className="flex items-center gap-3 mb-6 anim-fade-up">
+        <div 
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${period === 'custom' ? 'max-h-32 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'}`}
+        >
+          <div className="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-neutral-800/30 rounded-3xl border border-gray-200/50 dark:border-neutral-700/50">
             <div className="flex-1">
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">Start Date</label>
+              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1 block ml-2">Start</label>
               <div className="relative">
                 <input
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="w-full pl-3 pr-2 py-3 rounded-2xl border-0 bg-white/80 dark:bg-neutral-800/80 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-[15px] font-medium shadow-sm transition-all dark:[color-scheme:dark]"
+                  className="w-full pl-3 pr-2 py-2.5 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-sm font-medium shadow-sm transition-all dark:[color-scheme:dark]"
                 />
               </div>
             </div>
             <div className="flex-1">
-              <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 block ml-1">End Date</label>
+              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1 block ml-2">End</label>
               <div className="relative">
                 <input
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="w-full pl-3 pr-2 py-3 rounded-2xl border-0 bg-white/80 dark:bg-neutral-800/80 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-[15px] font-medium shadow-sm transition-all dark:[color-scheme:dark]"
+                  className="w-full pl-3 pr-2 py-2.5 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-sm font-medium shadow-sm transition-all dark:[color-scheme:dark]"
                 />
               </div>
             </div>
           </div>
-        )}
+        </div>
         
         <div className="glass-panel p-6 rounded-3xl mb-6 flex flex-col items-center justify-center min-h-[160px]">
           {loading ? (
