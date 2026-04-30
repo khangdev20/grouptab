@@ -699,7 +699,9 @@ export default function GroupFeedPage() {
               <div>
                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Paid by</label>
                 <div className="flex gap-2 flex-wrap">
-                  {Object.entries(profiles).map(([uid, profile]) => (
+                  {Object.entries(profiles)
+                    .sort(([uidA], [uidB]) => (uidA === currentUserId ? -1 : uidB === currentUserId ? 1 : 0))
+                    .map(([uid, profile]) => (
                     <button
                       key={uid}
                       onClick={() => setExpensePaidBy(uid)}
@@ -718,7 +720,9 @@ export default function GroupFeedPage() {
               <div>
                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Split between</label>
                 <div className="flex gap-2 flex-wrap">
-                  {Object.entries(profiles).map(([uid, profile]) => {
+                  {Object.entries(profiles)
+                    .sort(([uidA], [uidB]) => (uidA === currentUserId ? -1 : uidB === currentUserId ? 1 : 0))
+                    .map(([uid, profile]) => {
                     const isSelected = involvedMembers.includes(uid)
                     return (
                       <button

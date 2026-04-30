@@ -272,7 +272,7 @@ export default function ReceiptReviewPage() {
             Paid by
           </label>
           <div className="flex flex-wrap gap-2">
-            {members.map((m) => (
+            {[...members].sort((mA, mB) => (mA.id === currentUserId ? -1 : mB.id === currentUserId ? 1 : 0)).map((m) => (
               <button
                 key={m.id}
                 onClick={() => setPaidBy(m.id)}
