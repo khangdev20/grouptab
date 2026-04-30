@@ -216,7 +216,7 @@ export default function ProfilePage() {
                   </div>
                   <span className="text-[15px] font-bold text-gray-900 dark:text-white">GroupTab</span>
                 </div>
-                <span className="text-sm font-semibold text-gray-400 bg-gray-100 dark:bg-neutral-800 px-3 py-1 rounded-full">v1.0.0</span>
+                <span className="text-sm font-semibold text-gray-400 bg-gray-100 dark:bg-neutral-800 px-3 py-1 rounded-full">v2.0.0</span>
               </div>
             </div>
           </div>

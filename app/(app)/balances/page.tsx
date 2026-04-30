@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { ChevronRight, HandCoins, ArrowRightLeft, CheckCircle2 } from 'lucide-react'
 
 interface GroupBalance {
-  group: { id: string; name: string }
+  group: { id: string; name: string; avatar_url?: string | null }
   netBalance: number
 }
 
@@ -27,7 +27,7 @@ export default function BalancesPage() {
       // Get all groups user is in
       const { data: memberships } = await supabase
         .from('group_members')
-        .select('group_id, groups(id, name)')
+        .select('group_id, groups(id, name, avatar_url)')
         .eq('user_id', user.id)
 
       if (!memberships) return
