@@ -77,6 +77,7 @@ export type Expense = {
   description: string
   total_amount: number
   split_type: string
+  category?: string
   created_at: string
 }
 

@@ -24,6 +24,7 @@ export default function GroupFeedPage() {
   const [sending, setSending] = useState(false)
   const [showExpenseModal, setShowExpenseModal] = useState(false)
   const [expenseDesc, setExpenseDesc] = useState('')
+  const [expenseCategory, setExpenseCategory] = useState('other')
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expensePaidBy, setExpensePaidBy] = useState('')
   const [involvedMembers, setInvolvedMembers] = useState<string[]>([])
@@ -270,7 +271,7 @@ export default function GroupFeedPage() {
 
     const { data: expense, error: expenseError } = await supabase
       .from('expenses')
-      .insert({ group_id: groupId, paid_by: expensePaidBy, description: expenseDesc.trim(), total_amount: amount })
+      .insert({ group_id: groupId, paid_by: expensePaidBy, description: expenseDesc.trim(), total_amount: amount, category: expenseCategory })
       .select()
       .single()
 
@@ -297,6 +298,7 @@ export default function GroupFeedPage() {
     const paidName = profiles[expensePaidBy]?.name || 'Someone'
     pushNotify(`💸 New expense in ${group?.name || 'your group'}`, `${paidName} added ${expenseDesc.trim()} — $${parseFloat(expenseAmount).toFixed(2)}`, 'expense')
     setExpenseDesc('')
+    setExpenseCategory('other')
     setExpenseAmount('')
     setExpensePaidBy('')
     setShowExpenseModal(false)
@@ -659,6 +661,22 @@ export default function GroupFeedPage() {
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   autoFocus
                 />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Category</label>
+                <select
+                  value={expenseCategory}
+                  onChange={(e) => setExpenseCategory(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value="food_drink">🍔 Food & Drink</option>
+                  <option value="transport">🚕 Transport</option>
+                  <option value="shopping">🛒 Shopping</option>
+                  <option value="entertainment">🎟️ Entertainment</option>
+                  <option value="bills">💡 Bills</option>
+                  <option value="other">📦 Other</option>
+                </select>
               </div>
 
               <div>

@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { MessageCircle, Users, BarChart3, User } from 'lucide-react'
+import { MessageCircle, Users, BarChart3, User, PieChart } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { href: '/groups', icon: MessageCircle, label: 'Chats' },
-  { href: '/groups/new', icon: Users, label: 'New Group' },
+  { href: '/statistics', icon: PieChart, label: 'Statistics' },
   { href: '/balances', icon: BarChart3, label: 'Balances' },
   { href: '/profile', icon: User, label: 'Profile' },
 ]
@@ -20,8 +20,8 @@ export default function BottomNav() {
          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="flex items-center justify-around px-2 py-2">
         {tabs.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname === href || (href !== '/groups/new' && pathname.startsWith(href) && href !== '/groups' ? true : pathname === href)
-          const isGroupsActive = href === '/groups' && pathname.startsWith('/groups') && !pathname.startsWith('/groups/new')
+          const isActive = pathname === href || (href !== '/' && pathname.startsWith(href) && href !== '/groups' ? true : pathname === href)
+          const isGroupsActive = href === '/groups' && pathname.startsWith('/groups')
           const active = href === '/groups' ? isGroupsActive : isActive
 
           return (

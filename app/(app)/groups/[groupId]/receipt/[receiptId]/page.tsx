@@ -25,6 +25,7 @@ export default function ReceiptReviewPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [paidBy, setPaidBy] = useState<string>('')
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('other')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showImage, setShowImage] = useState(false)
@@ -104,6 +105,7 @@ export default function ReceiptReviewPage() {
           total_amount: totalAmount,
           receipt_id: receiptId,
           split_type: 'custom',
+          category,
         })
         .select()
         .single()
@@ -243,6 +245,25 @@ export default function ReceiptReviewPage() {
             onChange={(e) => setDescription(e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white text-sm"
           />
+        </div>
+
+        {/* Category */}
+        <div className="mx-4 mt-4">
+          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">
+            Category
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="food_drink">🍔 Food & Drink</option>
+            <option value="transport">🚕 Transport</option>
+            <option value="shopping">🛒 Shopping</option>
+            <option value="entertainment">🎟️ Entertainment</option>
+            <option value="bills">💡 Bills</option>
+            <option value="other">📦 Other</option>
+          </select>
         </div>
 
         {/* Paid by */}
