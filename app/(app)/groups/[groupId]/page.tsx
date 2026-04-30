@@ -631,8 +631,8 @@ export default function GroupFeedPage() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex-shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-gray-200/50 dark:border-neutral-800/50 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl z-20">
-        <div className="flex items-end gap-2">
+      <div className="flex-shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-gray-200/50 dark:border-neutral-800/50 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl z-20 relative">
+        <div className="flex items-end gap-2 relative">
           <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setInvolvedMembers(Object.keys(profiles)); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
             <Plus size={18} />
           </button>
