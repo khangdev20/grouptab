@@ -71,8 +71,8 @@ export default function GroupBalancesPage() {
       .from('settlements')
       .insert({
         group_id: groupId,
-        from_user: debt.from,
-        to_user: debt.to,
+        from_user_id: debt.from,
+        to_user_id: debt.to,
         amount: debt.amount,
         status: status,
       })
@@ -206,7 +206,7 @@ export default function GroupBalancesPage() {
                   const toIsMe = debt.to === currentUserId
                   const key = `${debt.from}-${debt.to}`
                   const pendingAmount = pendingSettlements
-                    .filter((s) => s.from_user === debt.from && s.to_user === debt.to)
+                    .filter((s) => s.from_user_id === debt.from && s.to_user_id === debt.to)
                     .reduce((sum, s) => sum + s.amount, 0)
                   const remainingDebt = debt.amount - pendingAmount
 

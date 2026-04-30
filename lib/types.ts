@@ -97,8 +97,8 @@ export type ExpenseShare = {
 export type Settlement = {
   id: string
   group_id: string
-  from_user: string
-  to_user: string
+  from_user_id: string
+  to_user_id: string
   amount: number
   status: string
   created_at: string
