@@ -20,12 +20,13 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
   const amount = meta?.amount ?? 0
   const fromName = meta?.from_name ?? 'Someone'
   const toName = meta?.to_name ?? 'Someone'
-  const status = meta?.status ?? 'completed'
   const toUser = meta?.to_user
   const settlementId = meta?.settlement_id
 
+  // localStatus allows instant UI update without waiting for realtime
+  const [localStatus, setLocalStatus] = useState<string>(meta?.status ?? 'completed')
   const [confirming, setConfirming] = useState(false)
-  const isPending = status === 'pending'
+  const isPending = localStatus === 'pending'
   const canConfirm = isPending && currentUserId === toUser
 
   const handleConfirm = async () => {
@@ -55,6 +56,8 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
     if (messageError) {
       toast.error('Failed to update message')
     } else {
+      // Immediately update UI — don't wait for realtime event
+      setLocalStatus('completed')
       toast.success('Payment confirmed!')
       try {
         await fetch('/api/push/notify', {
