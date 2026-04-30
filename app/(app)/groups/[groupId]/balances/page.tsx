@@ -19,6 +19,7 @@ export default function GroupBalancesPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [settling, setSettling] = useState<string | null>(null)
+  const [pendingSettlements, setPendingSettlements] = useState<any[]>([])
 
   useEffect(() => {
     const init = async () => {
@@ -29,8 +30,8 @@ export default function GroupBalancesPage() {
 
       const [{ data: members }, { data: shares }, { data: settlements }] = await Promise.all([
         supabase.from('group_members').select('user_id, profiles(*)').eq('group_id', groupId),
-        supabase.from('expense_shares').select('*, expenses!inner(group_id, paid_by)').eq('expenses.group_id', groupId),
-        supabase.from('settlements').select('*').eq('group_id', groupId).eq('status', 'completed'),
+        supabase.from('expense_shares').select('*, expenses!inner(group_id, paid_by, total_amount)').eq('expenses.group_id', groupId),
+        supabase.from('settlements').select('*').eq('group_id', groupId),
       ])
 
       const profileMap: Record<string, Profile> = {}
@@ -45,7 +46,9 @@ export default function GroupBalancesPage() {
       }
       setProfiles(profileMap)
 
-      const bal = calculateBalances(shares ?? [], settlements ?? [], memberIds)
+      const completedSettlements = (settlements ?? []).filter((s: any) => s.status === 'completed')
+      setPendingSettlements((settlements ?? []).filter((s: any) => s.status === 'pending'))
+      const bal = calculateBalances(shares ?? [], completedSettlements, memberIds)
       setBalances(bal)
       setDebts(simplifyDebts(bal))
       setLoading(false)
@@ -61,6 +64,9 @@ export default function GroupBalancesPage() {
     const fromProfile = profiles[debt.from]
     const toProfile = profiles[debt.to]
 
+    const isDebtor = currentUserId === debt.from
+    const status = isDebtor ? 'pending' : 'completed'
+
     const { data: settlement, error } = await supabase
       .from('settlements')
       .insert({
@@ -68,7 +74,7 @@ export default function GroupBalancesPage() {
         from_user: debt.from,
         to_user: debt.to,
         amount: debt.amount,
-        status: 'completed',
+        status: status,
       })
       .select()
       .single()
@@ -83,7 +89,9 @@ export default function GroupBalancesPage() {
       group_id: groupId,
       sender_id: currentUserId,
       type: 'settlement',
-      content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(debt.amount)}`,
+      content: isDebtor 
+        ? `${fromProfile?.name ?? 'Someone'} marked ${formatCurrency(debt.amount)} as paid. Waiting for confirmation.`
+        : `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(debt.amount)}`,
       metadata: {
         settlement_id: settlement.id,
         amount: debt.amount,
@@ -91,10 +99,11 @@ export default function GroupBalancesPage() {
         from_name: fromProfile?.name ?? '',
         to_user: debt.to,
         to_name: toProfile?.name ?? '',
+        status: status,
       },
     })
 
-    toast.success('Settlement recorded!')
+    toast.success(isDebtor ? 'Settlement submitted for confirmation!' : 'Settlement recorded!')
     setSettling(null)
     router.push(`/groups/${groupId}`)
   }
@@ -167,6 +176,41 @@ export default function GroupBalancesPage() {
                   const toIsMe = debt.to === currentUserId
                   const isMyDebt = fromIsMe || toIsMe
                   const key = `${debt.from}-${debt.to}`
+                  const pendingAmount = pendingSettlements
+                    .filter((s) => s.from_user === debt.from && s.to_user === debt.to)
+                    .reduce((sum, s) => sum + s.amount, 0)
+                  const remainingDebt = debt.amount - pendingAmount
+
+                  if (remainingDebt <= 0 && pendingAmount > 0) {
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center gap-3 bg-gray-50 dark:bg-neutral-800 rounded-2xl px-4 py-3"
+                      >
+                        <Avatar name={from?.name ?? '?'} size="md" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 dark:text-white">
+                            <span className="font-semibold">{fromIsMe ? 'You' : from?.name}</span>
+                            {' '}
+                            <span className="text-gray-500">→</span>
+                            {' '}
+                            <span className="font-semibold">{toIsMe ? 'you' : to?.name}</span>
+                          </p>
+                          <p className="text-sm font-bold text-amber-500 mt-0.5">{formatCurrency(debt.amount)} · Pending confirmation</p>
+                        </div>
+                        {toIsMe && (
+                          <button
+                            onClick={() => handleSettle({ ...debt, amount: pendingAmount })}
+                            disabled={settling === key}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white rounded-full text-xs font-semibold haptic disabled:opacity-50"
+                          >
+                            <CheckCircle2 size={12} />
+                            {settling === key ? '...' : 'Confirm'}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  }
 
                   return (
                     <div
@@ -182,16 +226,26 @@ export default function GroupBalancesPage() {
                           {' '}
                           <span className="font-semibold">{toIsMe ? 'you' : to?.name}</span>
                         </p>
-                        <p className="text-sm font-bold text-emerald-500 mt-0.5">{formatCurrency(debt.amount)}</p>
+                        <p className="text-sm font-bold text-emerald-500 mt-0.5">{formatCurrency(remainingDebt)}</p>
                       </div>
-                      {isMyDebt && (
+                      {fromIsMe && (
                         <button
-                          onClick={() => handleSettle(debt)}
+                          onClick={() => handleSettle({ ...debt, amount: remainingDebt })}
                           disabled={settling === key}
                           className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white rounded-full text-xs font-semibold haptic disabled:opacity-50"
                         >
                           <CheckCircle2 size={12} />
                           {settling === key ? '...' : 'Mark paid'}
+                        </button>
+                      )}
+                      {toIsMe && (
+                        <button
+                          onClick={() => handleSettle({ ...debt, amount: remainingDebt })}
+                          disabled={settling === key}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-full text-xs font-semibold haptic disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={12} />
+                          {settling === key ? '...' : 'Confirm received'}
                         </button>
                       )}
                     </div>

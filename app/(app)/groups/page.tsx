@@ -34,77 +34,88 @@ export default function GroupsPage() {
   }, [])
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden">
+      {/* Background blobs */}
+      <div className="absolute top-[-5%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-2.5 anim-slide-left">
-            <Logo size={34} />
-            <span className="text-[17px] font-black text-gray-900 dark:text-white tracking-tight">GroupTab</span>
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
+        <div className="flex items-center justify-between py-3.5">
+          <div className="flex items-center gap-3 anim-slide-left">
+            <Logo size={36} />
+            <span className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">GroupTab</span>
           </div>
           <Link
             href="/groups/new"
-            className="anim-scale-in w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center haptic shadow-sm shadow-emerald-200 dark:shadow-none"
+            className="anim-scale-in w-10 h-10 bg-gradient-to-tr from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 rounded-full flex items-center justify-center haptic shadow-lg shadow-emerald-500/30 transition-all"
           >
-            <Plus size={18} className="text-white" />
+            <Plus size={22} className="text-white drop-shadow-sm" />
           </Link>
         </div>
       </div>
 
       {/* Groups list */}
-      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(5rem+env(safe-area-inset-bottom,0px))] px-4 pt-5 z-10">
         {loading ? (
-          <div className="divide-y divide-gray-100 dark:divide-neutral-800 px-4">
+          <div className="space-y-4">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-3 py-4">
-                <div className="skeleton w-12 h-12 rounded-2xl flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="skeleton h-3.5 w-2/3 rounded" />
-                  <div className="skeleton h-3 w-1/3 rounded" />
+              <div key={i} className="glass-panel p-4 rounded-3xl flex items-center gap-4">
+                <div className="skeleton w-14 h-14 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div className="skeleton h-4 w-1/2 rounded-full" />
+                  <div className="skeleton h-3 w-1/3 rounded-full" />
                 </div>
               </div>
             ))}
           </div>
         ) : groups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center anim-fade-up">
-            <div className="anim-float w-20 h-20 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
-              <Logo size={48} />
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center anim-fade-up">
+            <div className="anim-float w-24 h-24 rounded-3xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-6 shadow-inner border border-emerald-200/50 dark:border-emerald-800/50">
+              <Logo size={56} />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No groups yet</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">No groups yet</h2>
+            <p className="text-[15px] text-gray-500 dark:text-gray-400 mb-8 font-medium max-w-[260px] leading-relaxed">
               Create a group to start tracking shared expenses with friends.
             </p>
             <Link
               href="/groups/new"
-              className="px-6 py-2.5 bg-emerald-500 text-white rounded-full text-sm font-semibold haptic shadow-md shadow-emerald-200 dark:shadow-none"
+              className="px-7 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl text-[15px] font-bold haptic shadow-lg shadow-emerald-500/30 transition-all hover:scale-105"
             >
               Create your first group
             </Link>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-neutral-800">
+          <div className="space-y-3.5">
             {groups.map((group, idx) => (
               <Link
                 key={group.id}
                 href={`/groups/${group.id}`}
-                className="anim-fade-up flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors haptic"
-                style={{ animationDelay: `${idx * 50}ms` }}
+                className="anim-fade-up block glass-panel p-4 rounded-3xl hover:bg-white/90 dark:hover:bg-neutral-800/90 active:scale-[0.98] transition-all duration-200 hover:shadow-lg hover:shadow-emerald-900/5 dark:hover:shadow-black/20"
+                style={{ animationDelay: `${idx * 40}ms` }}
               >
-                <Avatar name={group.name} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-900 dark:text-white text-[15px] truncate">
-                      {group.name}
-                    </span>
-                    <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
-                      {formatDate(group.created_at)}
-                    </span>
+                <div className="flex items-center gap-4">
+                  <div className="shadow-sm rounded-full bg-white dark:bg-neutral-800 p-0.5">
+                    <Avatar name={group.name} size="lg" />
                   </div>
-                  {group.description && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                      {group.description}
-                    </p>
-                  )}
+                  <div className="flex-1 min-w-0 py-1">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-bold text-gray-900 dark:text-white text-[16px] truncate tracking-tight">
+                        {group.name}
+                      </span>
+                      <span className="text-[11px] font-semibold text-gray-400/80 dark:text-gray-500 uppercase tracking-wider ml-2 flex-shrink-0 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
+                        {formatDate(group.created_at)}
+                      </span>
+                    </div>
+                    {group.description ? (
+                      <p className="text-[14px] text-gray-500 dark:text-gray-400 truncate font-medium">
+                        {group.description}
+                      </p>
+                    ) : (
+                      <p className="text-[14px] text-gray-400 dark:text-gray-500 italic font-medium">
+                        No description
+                      </p>
+                    )}
+                  </div>
                 </div>
               </Link>
             ))}

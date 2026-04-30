@@ -26,14 +26,25 @@ export default function GroupFeedPage() {
   const [expenseDesc, setExpenseDesc] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expensePaidBy, setExpensePaidBy] = useState('')
+  const [involvedMembers, setInvolvedMembers] = useState<string[]>([])
   const [savingExpense, setSavingExpense] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
   const [showMentions, setShowMentions] = useState(false)
+  const [mentionIndex, setMentionIndex] = useState(0)
   const [sendingImage, setSendingImage] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const messagesRef = useRef<Message[]>([])
+  
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
   const [, startTransition] = useTransition()
 
   const scrollToBottom = useCallback((smooth = false) => {
@@ -42,17 +53,43 @@ export default function GroupFeedPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    let channel: ReturnType<typeof supabase.channel> | null = null
+    
+    // Setup realtime subscription synchronously to avoid React 18 strict mode race conditions
+    const channel = supabase
+      .channel(`group-${groupId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `group_id=eq.${groupId}`,
+      }, (payload) => {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.find((m) => m.id === (payload.new as Message).id)) return prev
+          return [...prev, payload.new as Message]
+        })
+        setTimeout(() => scrollToBottom(true), 50)
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `group_id=eq.${groupId}`,
+      }, (payload) => {
+        setMessages((prev) => prev.map((m) => m.id === payload.new.id ? payload.new as Message : m))
+      })
+      .subscribe()
 
     const fetchMessages = async () => {
       const { data: msgs } = await supabase
         .from('messages')
         .select('*')
         .eq('group_id', groupId)
-        .order('created_at', { ascending: true })
-        .limit(200)
+        .order('created_at', { ascending: false })
+        .limit(20)
       if (msgs) {
-        setMessages(msgs)
+        setMessages(msgs.reverse())
+        setHasMore(msgs.length === 20)
         setTimeout(() => scrollToBottom(false), 50)
       }
     }
@@ -76,38 +113,45 @@ export default function GroupFeedPage() {
 
       await fetchMessages()
       setLoading(false)
-
-      // Realtime subscription
-      channel = supabase
-        .channel(`group-${groupId}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `group_id=eq.${groupId}`,
-        }, (payload) => {
-          setMessages((prev) => {
-            // Avoid duplicates
-            if (prev.find((m) => m.id === (payload.new as Message).id)) return prev
-            return [...prev, payload.new as Message]
-          })
-          setTimeout(() => scrollToBottom(true), 50)
-        })
-        .subscribe()
     }
 
     init()
 
-    // Refetch when tab regains focus (user switches back from another app)
-    const onFocus = () => fetchMessages()
+    // Refetch when tab regains focus to catch any missed realtime events safely
+    const onFocus = async () => {
+      const currentMsgs = messagesRef.current
+      if (!currentMsgs.length) {
+        fetchMessages()
+        return
+      }
+      const latestMsg = currentMsgs[currentMsgs.length - 1]
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('group_id', groupId)
+        .gt('created_at', latestMsg.created_at)
+        .order('created_at', { ascending: true })
+      
+      if (msgs && msgs.length > 0) {
+        setMessages(prev => {
+          const newMsgs = msgs.filter(m => !prev.find(p => p.id === m.id))
+          return [...prev, ...newMsgs]
+        })
+        setTimeout(() => scrollToBottom(true), 50)
+      }
+    }
+    
     window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') fetchMessages()
-    })
+    
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') onFocus()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
 
     return () => {
-      if (channel) supabase.removeChannel(channel)
+      supabase.removeChannel(channel)
       window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [groupId, scrollToBottom])
 
@@ -128,12 +172,47 @@ export default function GroupFeedPage() {
     return () => document.removeEventListener('paste', handleDocPaste)
   }, [groupId, scrollToBottom])
 
+  const loadMoreMessages = async () => {
+    if (loadingMore || !hasMore || messages.length === 0) return
+    setLoadingMore(true)
+    const supabase = createClient()
+    const oldestMessageDate = messages[0].created_at
+
+    const { data: msgs } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('group_id', groupId)
+      .lt('created_at', oldestMessageDate)
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    if (msgs) {
+      if (msgs.length < 20) setHasMore(false)
+      const scrollElement = scrollAreaRef.current
+      const prevScrollHeight = scrollElement?.scrollHeight ?? 0
+
+      setMessages(prev => {
+        const newMsgs = msgs.reverse().filter(m => !prev.find(p => p.id === m.id))
+        return [...newMsgs, ...prev]
+      })
+
+      // Use requestAnimationFrame to let DOM update before restoring scroll position
+      requestAnimationFrame(() => {
+        if (scrollElement) {
+          scrollElement.scrollTop = scrollElement.scrollHeight - prevScrollHeight
+        }
+      })
+    }
+    setLoadingMore(false)
+  }
+
   const sendMessage = async () => {
     if (!text.trim() || sending || !currentUserId) return
     setSending(true)
     const supabase = createClient()
     const trimmed = text.trim()
     const { error } = await supabase.from('messages').insert({ group_id: groupId, sender_id: currentUserId, type: 'text', content: trimmed })
+    
     if (error) toast.error('Failed to send')
     else {
       const senderName = profiles[currentUserId]?.name || 'Someone'
@@ -151,18 +230,43 @@ export default function GroupFeedPage() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (showMentions) {
+      const filteredProfiles = Object.values(profiles).filter(p => p.id !== currentUserId && p.name.toLowerCase().includes(mentionQuery))
+      if (filteredProfiles.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setMentionIndex(prev => Math.min(prev + 1, filteredProfiles.length - 1))
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setMentionIndex(prev => Math.max(prev - 1, 0))
+          return
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          insertMention(filteredProfiles[mentionIndex]?.name || filteredProfiles[0].name)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setShowMentions(false)
+          return
+        }
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
 
   const handleAddExpense = async () => {
     const amount = parseFloat(expenseAmount)
-    if (!expenseDesc.trim() || isNaN(amount) || amount <= 0 || !expensePaidBy || !currentUserId) return
+    if (!expenseDesc.trim() || isNaN(amount) || amount <= 0 || !expensePaidBy || !currentUserId || involvedMembers.length === 0) return
     setSavingExpense(true)
     const supabase = createClient()
 
-    // Get all member IDs for equal split
-    const memberIds = Object.keys(profiles)
-    const splitAmount = amount / memberIds.length
+    // Split amount only among selected members
+    const splitAmount = amount / involvedMembers.length
 
     const { data: expense, error: expenseError } = await supabase
       .from('expenses')
@@ -177,7 +281,7 @@ export default function GroupFeedPage() {
     }
 
     await supabase.from('expense_shares').insert(
-      memberIds.map((uid) => ({ expense_id: expense.id, user_id: uid, amount: splitAmount }))
+      involvedMembers.map((uid) => ({ expense_id: expense.id, user_id: uid, amount: splitAmount }))
     )
 
     const paidByName = profiles[expensePaidBy]?.name ?? 'Someone'
@@ -255,7 +359,11 @@ export default function GroupFeedPage() {
     const before = text.slice(0, cursor)
     const after = text.slice(cursor)
     const atIndex = before.lastIndexOf('@')
-    const newText = before.slice(0, atIndex) + '@' + name + ' ' + after
+    
+    // Format name to remove spaces so /@\S+/ regex can highlight it correctly
+    const formattedName = name.replace(/\s+/g, '')
+    const newText = before.slice(0, atIndex) + '@' + formattedName + ' ' + after
+    
     setText(newText)
     setShowMentions(false)
     startTransition(() => { textarea.focus() })
@@ -336,12 +444,18 @@ export default function GroupFeedPage() {
 
   const renderMessage = (msg: Message, idx: number) => {
     const prev = messages[idx - 1]
+    const next = messages[idx + 1]
     const isMine = msg.sender_id === currentUserId
     const sender = profiles[msg.sender_id] ?? null
-    const showAvatar = !isMine && (!prev || prev.sender_id !== msg.sender_id)
+    
+    const isLastInBlock = !next || next.sender_id !== msg.sender_id || new Date(next.created_at).getTime() - new Date(msg.created_at).getTime() > 5 * 60 * 1000
 
-    if (msg.type === 'expense') return <div key={msg.id}><ExpenseBubble message={msg} senderName={sender?.name ?? ''} isMine={isMine} /></div>
-    if (msg.type === 'settlement') return <div key={msg.id}><SettlementBubble message={msg} isMine={isMine} /></div>
+    const showName = !isMine && (!prev || prev.sender_id !== msg.sender_id)
+    const showAvatar = !isMine && isLastInBlock
+    const showTime = isLastInBlock
+
+    if (msg.type === 'expense') return <div key={msg.id}><ExpenseBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} /></div>
+    if (msg.type === 'settlement') return <div key={msg.id}><SettlementBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} currentUserId={currentUserId} /></div>
 
     if (msg.type === 'receipt_pending') {
       const meta = msg.metadata as any
@@ -350,12 +464,24 @@ export default function GroupFeedPage() {
       const itemsCount = meta?.items_count ?? 0
       const membersCount = meta?.members_count ?? Object.keys(profiles).length
       return (
-        <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} my-2`}>
-          <Link
-            href={`/groups/${groupId}/receipt/${meta?.receipt_id}`}
-            className="block max-w-[82%] haptic"
-          >
-            <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm">
+        <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} my-2`}>
+          <div className={`flex items-end gap-[10px] w-full ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
+            {!isMine && (
+              <div className="w-7 flex-shrink-0">
+                {showAvatar && sender && <Avatar name={sender.name} size="sm" />}
+              </div>
+            )}
+            
+            <div className={`flex flex-col max-w-[82%] sm:max-w-[75%] ${isMine ? 'items-end' : 'items-start'}`}>
+              {!isMine && showName && sender && (
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 ml-3.5">{sender.name}</span>
+              )}
+              
+              <Link
+                href={`/groups/${groupId}/receipt/${meta?.receipt_id}`}
+                className="block w-full haptic"
+              >
+                <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm w-full">
               {/* Header */}
               <div className="bg-emerald-500 px-3.5 py-2.5 flex items-center gap-2">
                 <Receipt size={14} className="text-white flex-shrink-0" />
@@ -380,18 +506,20 @@ export default function GroupFeedPage() {
               <div className="border-t border-gray-100 dark:border-neutral-700 px-3.5 py-2 bg-gray-50 dark:bg-neutral-750">
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold text-center">Tap to split →</p>
               </div>
+                </div>
+              </Link>
             </div>
-          </Link>
+          </div>
         </div>
       )
     }
 
-    return <div key={msg.id} className="py-0.5"><MessageBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} /></div>
+    return <div key={msg.id} className="py-0.5"><MessageBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} showTime={showTime} /></div>
   }
 
   return (
     <div className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex flex-col bg-white dark:bg-neutral-900 z-[60]">
-      <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 pt-safe flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 border-b border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex-shrink-0">
         <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
           <ArrowLeft size={20} />
         </Link>
@@ -413,7 +541,11 @@ export default function GroupFeedPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4 scroll-area">
+      <div className="flex-1 overflow-y-auto px-3 py-4 scroll-area" ref={scrollAreaRef} onScroll={(e) => {
+        if (e.currentTarget.scrollTop === 0 && hasMore && !loadingMore) {
+          loadMoreMessages()
+        }
+      }}>
         {loading ? (
           <div className="flex justify-center py-8"><div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : messages.length === 0 ? (
@@ -422,14 +554,21 @@ export default function GroupFeedPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">Say hi or upload a receipt to get started!</p>
           </div>
         ) : (
-          <div className="space-y-1">{messages.map((msg, idx) => renderMessage(msg, idx))}</div>
+          <div className="space-y-1">
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+            {messages.map((msg, idx) => renderMessage(msg, idx))}
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 pb-safe">
+      <div className="flex-shrink-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-900">
         <div className="flex items-end gap-2">
-          <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
+          <button onClick={() => { setExpensePaidBy(currentUserId ?? ''); setInvolvedMembers(Object.keys(profiles)); setShowExpenseModal(true) }} className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0 haptic">
             <Plus size={18} />
           </button>
           {/* Image / sticker picker — label wraps input for iOS compatibility */}
@@ -451,15 +590,18 @@ export default function GroupFeedPage() {
           <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleReceiptUpload} />
           {/* @mention dropdown */}
           {showMentions && (
-            <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-white dark:bg-neutral-800 rounded-2xl shadow-lg border border-gray-200 dark:border-neutral-700 overflow-hidden z-10">
-              {Object.entries(profiles)
-                .filter(([uid, p]) => uid !== currentUserId && p.name.toLowerCase().includes(mentionQuery))
-                .map(([uid, profile]) => (
+            <div className="absolute bottom-full left-0 right-0 mx-3 mb-1 bg-white dark:bg-neutral-800 rounded-2xl shadow-lg border border-gray-200 dark:border-neutral-700 overflow-hidden z-10 py-1">
+              {Object.values(profiles)
+                .filter(p => p.id !== currentUserId && p.name.toLowerCase().includes(mentionQuery))
+                .map((profile, idx) => (
                   <button
-                    key={uid}
+                    key={profile.id}
                     onMouseDown={(e) => { e.preventDefault(); insertMention(profile.name) }}
                     onTouchStart={(e) => { e.preventDefault(); insertMention(profile.name) }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-neutral-700 text-left haptic"
+                    onMouseEnter={() => setMentionIndex(idx)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left haptic ${
+                      idx === mentionIndex ? 'bg-gray-100 dark:bg-neutral-700' : 'hover:bg-gray-50 dark:hover:bg-neutral-700/50'
+                    }`}
                   >
                     <Avatar name={profile.name} size="sm" />
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.name}</span>
@@ -467,16 +609,20 @@ export default function GroupFeedPage() {
                 ))}
             </div>
           )}
-          <div className="flex-1 bg-gray-100 dark:bg-neutral-800 rounded-2xl px-4 py-2.5 flex items-end gap-2">
+          
+          <div className="flex-1 bg-gray-100 dark:bg-neutral-800 rounded-2xl px-4 py-3 flex items-end gap-2">
             <textarea ref={textareaRef} value={text} onChange={(e) => {
               setText(e.target.value)
               const val = e.target.value
               const cursor = e.target.selectionStart ?? val.length
               const before = val.slice(0, cursor)
-              const match = before.match(/@(\w*)$/)
+              const match = before.match(/@([a-zA-Z0-9_\- ]*)$/)
               if (match) {
-                setMentionQuery(match[1].toLowerCase())
-                setShowMentions(true)
+                const query = match[1].toLowerCase()
+                setMentionQuery(query)
+                setMentionIndex(0)
+                const hasMatches = Object.values(profiles).some(p => p.id !== currentUserId && p.name.toLowerCase().includes(query))
+                setShowMentions(hasMatches)
               } else {
                 setShowMentions(false)
               }
@@ -485,7 +631,7 @@ export default function GroupFeedPage() {
               <AtSign size={15} />
             </button>
           </div>
-          <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-emerald-500 disabled:bg-emerald-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-shrink-0 haptic transition-colors">
+          <button onClick={sendMessage} disabled={!text.trim() || sending} className="w-10 h-10 rounded-full bg-emerald-500 disabled:bg-emerald-200 dark:disabled:bg-neutral-700 flex items-center justify-center flex-shrink-0 haptic transition-colors mb-0.5">
             <Send size={16} className="text-white" />
           </button>
         </div>
@@ -493,11 +639,11 @@ export default function GroupFeedPage() {
 
       {/* Manual Expense Modal */}
       {showExpenseModal && (
-        <div className="absolute inset-0 bg-black/50 z-10 flex items-end" onClick={(e) => e.target === e.currentTarget && setShowExpenseModal(false)}>
-          <div className="w-full bg-white dark:bg-neutral-900 rounded-t-3xl px-5 pt-5 pb-safe">
+        <div className="absolute inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && setShowExpenseModal(false)}>
+          <div className="w-full max-w-sm bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl anim-scale-in">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white">Add Expense</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center haptic">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add Expense</h3>
+              <button onClick={() => setShowExpenseModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center haptic hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors">
                 <X size={16} className="text-gray-500" />
               </button>
             </div>
@@ -541,8 +687,8 @@ export default function GroupFeedPage() {
                       onClick={() => setExpensePaidBy(uid)}
                       className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors haptic ${
                         expensePaidBy === uid
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300'
+                          ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                          : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
                       }`}
                     >
                       {uid === currentUserId ? 'You' : profile.name}
@@ -551,16 +697,52 @@ export default function GroupFeedPage() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-400 dark:text-gray-500">Split equally among all {Object.keys(profiles).length} members</p>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">Split between</label>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.entries(profiles).map(([uid, profile]) => {
+                    const isSelected = involvedMembers.includes(uid)
+                    return (
+                      <button
+                        key={`split-${uid}`}
+                        onClick={() => {
+                          if (isSelected) {
+                            if (involvedMembers.length > 1) {
+                              setInvolvedMembers(prev => prev.filter(id => id !== uid))
+                            }
+                          } else {
+                            setInvolvedMembers(prev => [...prev, uid])
+                          }
+                        }}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors haptic flex items-center gap-1.5 border border-transparent ${
+                          isSelected
+                            ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800'
+                            : 'bg-gray-50 dark:bg-neutral-800 text-gray-400 hover:bg-gray-100 dark:hover:bg-neutral-700'
+                        }`}
+                      >
+                        <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-colors ${isSelected ? 'bg-teal-500 border-teal-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                          {isSelected && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                        </div>
+                        {uid === currentUserId ? 'You' : profile.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium pb-2 text-center bg-gray-50 dark:bg-neutral-800/50 rounded-lg py-2">
+                Split equally among <span className="font-bold text-gray-600 dark:text-gray-300">{involvedMembers.length} member{involvedMembers.length !== 1 ? 's' : ''}</span> 
+                {involvedMembers.length > 0 && expenseAmount && !isNaN(parseFloat(expenseAmount)) && ` ($${(parseFloat(expenseAmount) / involvedMembers.length).toFixed(2)} / each)`}
+              </p>
 
               <button
                 onClick={handleAddExpense}
                 disabled={savingExpense || !expenseDesc.trim() || !expenseAmount || !expensePaidBy}
-                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic mb-2"
+                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic mt-2 shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)]"
               >
                 {savingExpense ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                     Saving…
                   </span>
                 ) : 'Add Expense'}

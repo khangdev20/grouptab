@@ -102,10 +102,14 @@ export function calculateBalances(
     balanceMap.set(s.to_user, toCurrent - s.amount)
   }
 
-  return memberIds.map((id) => ({
-    userId: id,
-    amount: Math.round((balanceMap.get(id) ?? 0) * 100) / 100,
-  }))
+  const result: Balance[] = []
+  for (const [userId, amount] of balanceMap.entries()) {
+    result.push({
+      userId,
+      amount: Math.round(amount * 100) / 100,
+    })
+  }
+  return result
 }
 
 /**
