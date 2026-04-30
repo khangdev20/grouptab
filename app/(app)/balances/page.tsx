@@ -84,68 +84,80 @@ export default function BalancesPage() {
   }, [])
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-neutral-900">
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      {/* Background glowing effects */}
+      <div className="absolute top-[-5%] left-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="absolute bottom-[20%] right-[-10%] w-[250px] h-[250px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="py-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Balances</h1>
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
+        <div className="py-3.5">
+          <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">Balances</h1>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-7 h-7 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex justify-center py-16 z-10">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto scroll-area pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
+        <div className="flex-1 overflow-y-auto scroll-area z-10">
           {/* Summary cards */}
-          <div className="grid grid-cols-2 gap-3 px-4 pt-4">
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
-              <p className="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">You're owed</p>
-              <p className="text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalOwed)}</p>
+          <div className="grid grid-cols-2 gap-4 px-5 pt-5">
+            <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <span className="text-4xl text-green-500">💰</span>
+              </div>
+              <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1.5 relative z-10">You're owed</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight relative z-10">{formatCurrency(totalOwed)}</p>
             </div>
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-4">
-              <p className="text-xs text-red-500 font-semibold mb-1">You owe</p>
-              <p className="text-xl font-bold text-red-500">{formatCurrency(totalOwe)}</p>
+            <div className="glass-panel p-5 rounded-3xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <span className="text-4xl text-red-500">💸</span>
+              </div>
+              <p className="text-xs font-bold text-red-500 dark:text-red-400 uppercase tracking-widest mb-1.5 relative z-10">You owe</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight relative z-10">{formatCurrency(totalOwe)}</p>
             </div>
           </div>
 
           {/* Per-group */}
           {groupBalances.length > 0 ? (
-            <div className="px-4 mt-5">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                By group
+            <div className="px-5 mt-6 mb-4">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1">
+                By Group
               </p>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {groupBalances.map(({ group, netBalance }) => (
                   <Link
                     key={group.id}
                     href={`/groups/${group.id}/balances`}
-                    className="flex items-center gap-3 bg-gray-50 dark:bg-neutral-800 rounded-2xl px-4 py-3.5 haptic"
+                    className="flex items-center gap-4 glass-panel p-4 rounded-3xl haptic hover:scale-[0.98] transition-transform active:scale-95"
                   >
-                    <Avatar name={group.name} size="md" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{group.name}</p>
-                      <p className={`text-xs font-medium mt-0.5 ${netBalance > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {netBalance > 0 ? `Owed ${formatCurrency(netBalance)}` : `Owes ${formatCurrency(Math.abs(netBalance))}`}
+                    <Avatar name={group.name} size="md" className="shadow-md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-bold text-gray-900 dark:text-white truncate">{group.name}</p>
+                      <p className={`text-xs font-semibold mt-0.5 ${netBalance > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {netBalance > 0 ? `You are owed ${formatCurrency(netBalance)}` : `You owe ${formatCurrency(Math.abs(netBalance))}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <span className={`font-bold text-base ${netBalance > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`font-black text-lg ${netBalance > 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {netBalance > 0 ? '+' : '-'}{formatCurrency(Math.abs(netBalance))}
                       </span>
-                      <ChevronRight size={16} className="text-gray-400" />
+                      <ChevronRight size={18} className="text-gray-400" />
                     </div>
                   </Link>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-              <span className="text-4xl mb-3">✅</span>
-              <p className="font-semibold text-gray-900 dark:text-white">All settled!</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                No outstanding balances across any groups.
+            <div className="flex flex-col items-center justify-center py-20 text-center px-6 mt-4">
+              <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-5">
+                <span className="text-4xl">✅</span>
+              </div>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">All settled up!</h2>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-2 max-w-[250px]">
+                You have no outstanding balances in any of your groups.
               </p>
             </div>
           )}
