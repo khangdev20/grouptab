@@ -27,32 +27,38 @@ export default function PushPrompt() {
   }
 
   return (
-    <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-[80] animate-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-xl border border-gray-100 dark:border-neutral-700 p-4 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-          <Bell size={16} className="text-emerald-500" />
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px] z-[80] anim-fade-up">
+      <div className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-gray-200/50 dark:border-neutral-800/50 p-5 flex items-start gap-4 relative overflow-hidden">
+        {/* Glowing orb effect */}
+        <div className="absolute top-[-20%] left-[-10%] w-[150px] h-[150px] bg-emerald-400/20 dark:bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none z-0"></div>
+
+        <div className="w-12 h-12 rounded-[18px] bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm shadow-emerald-500/20 flex items-center justify-center flex-shrink-0 relative z-10">
+          <Bell size={22} className="text-white drop-shadow-sm" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">Enable notifications</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Get notified for expenses, mentions & reminders</p>
-          <div className="flex gap-2 mt-3">
+        
+        <div className="flex-1 min-w-0 relative z-10 pr-6">
+          <p className="text-[16px] font-black text-gray-900 dark:text-white tracking-tight">Stay updated</p>
+          <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1 leading-snug">Get instant alerts for new expenses, settlements, and @mentions.</p>
+          
+          <div className="flex gap-2.5 mt-4">
             <button
               onClick={handleEnable}
               disabled={loading}
-              className="flex-1 bg-emerald-500 text-white text-xs font-semibold py-2 rounded-xl haptic disabled:opacity-60"
+              className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 dark:disabled:bg-emerald-800/50 disabled:text-white/50 text-white text-[13px] font-bold py-3 rounded-2xl transition-colors haptic shadow-sm shadow-emerald-500/20"
             >
-              {loading ? 'Enabling…' : 'Enable'}
+              {loading ? 'Enabling…' : 'Turn on'}
             </button>
             <button
               onClick={() => setDismissed(true)}
-              className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 haptic"
+              className="flex-1 bg-gray-100/80 dark:bg-neutral-800/80 text-gray-600 dark:text-gray-300 text-[13px] font-bold py-3 rounded-2xl transition-colors haptic"
             >
-              Not now
+              Maybe later
             </button>
           </div>
         </div>
-        <button onClick={() => setDismissed(true)} className="text-gray-400 haptic">
-          <X size={14} />
+
+        <button onClick={() => setDismissed(true)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 haptic z-10 p-1.5 bg-gray-50 dark:bg-neutral-800 rounded-full transition-colors">
+          <X size={14} strokeWidth={3} />
         </button>
       </div>
     </div>
