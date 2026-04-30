@@ -56,6 +56,19 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
       toast.error('Failed to update message')
     } else {
       toast.success('Payment confirmed!')
+      try {
+        await fetch('/api/push/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupId: message.group_id,
+            title: `✅ Payment Confirmed`,
+            body: `Your payment of ${formatCurrency(amount)} was confirmed by ${toName.split(' ')[0]}.`,
+            url: `/groups/${message.group_id}`,
+            tag: 'settlement'
+          }),
+        })
+      } catch { /* best-effort */ }
     }
     setConfirming(false)
   }

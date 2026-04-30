@@ -105,6 +105,25 @@ export default function GroupBalancesPage() {
 
     toast.success(isDebtor ? 'Settlement submitted for confirmation!' : 'Settlement recorded!')
     setSettling(null)
+
+    try {
+      const paidName = isDebtor ? profiles[currentUserId]?.name?.split(' ')[0] : fromProfile?.name?.split(' ')[0]
+      const title = isDebtor ? `💸 ${paidName} paid you` : `✅ Payment recorded`
+      const body = isDebtor ? `${paidName} marked ${formatCurrency(debt.amount)} as paid. Tap to confirm.` : `A payment of ${formatCurrency(debt.amount)} was recorded.`
+      
+      await fetch('/api/push/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId,
+          title,
+          body,
+          url: `/groups/${groupId}`,
+          tag: 'settlement'
+        }),
+      })
+    } catch { /* best-effort */ }
+
     router.push(`/groups/${groupId}`)
   }
 

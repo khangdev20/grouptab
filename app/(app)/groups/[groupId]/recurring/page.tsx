@@ -149,6 +149,23 @@ export default function RecurringPage() {
     }
 
     toast.success('Recurring payment added!')
+    
+    try {
+      const payerProfile = members.find(m => m.id === payerId)
+      const payerName = payerProfile?.name?.split(' ')[0] ?? 'Someone'
+      await fetch('/api/push/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId,
+          title: `🔄 New recurring payment`,
+          body: `${payerName} set up a ${frequency} payment for ${title.trim()} (${formatCurrency(parseFloat(amount))}).`,
+          url: `/groups/${groupId}/recurring`,
+          tag: 'recurring'
+        }),
+      })
+    } catch { /* best-effort */ }
+
     setTitle(''); setAmount(''); setNotes(''); setShowForm(false)
     // Reload
     const { data: recs } = await supabase.from('recurring_payments').select('*').eq('group_id', groupId).eq('active', true).order('next_due_date', { ascending: true })
