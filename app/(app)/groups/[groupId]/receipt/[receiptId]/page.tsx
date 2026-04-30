@@ -194,107 +194,130 @@ export default function ReceiptReviewPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-neutral-950">
+  return (
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      {/* Background glowing effects */}
+      <div className="absolute top-[-10%] left-[-20%] w-[400px] h-[400px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[20%] right-[-10%] w-[300px] h-[300px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="flex items-center gap-3 py-4">
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
+        <div className="flex items-center gap-4 py-3.5">
           <Link
             href={`/groups/${groupId}`}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic transition-colors"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={22} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Review Receipt</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">Review Receipt</h1>
+            <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-[200px]">
               {receipt?.merchant_name ?? 'Receipt'}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(9rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto scroll-area pb-[calc(7rem+env(safe-area-inset-bottom,0px))] z-10 px-5 pt-5 space-y-6">
+        
         {/* Receipt image toggle */}
         {receipt?.image_url && (
-          <div className="bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800">
+          <div className="glass-panel rounded-3xl overflow-hidden shadow-sm">
             <button
               onClick={() => setShowImage(!showImage)}
-              className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-600 dark:text-gray-400 haptic"
+              className="w-full flex items-center justify-between px-5 py-4 text-[15px] font-bold text-gray-700 dark:text-gray-300 haptic hover:bg-gray-50/50 dark:hover:bg-neutral-800/50 transition-colors"
             >
-              <span>View receipt image</span>
-              {showImage ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                  <Receipt size={16} className="text-emerald-500" />
+                </div>
+                <span>View scanned image</span>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center">
+                {showImage ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
             </button>
             {showImage && (
-              <img
-                src={receipt.image_url}
-                alt="Receipt"
-                className="w-full max-h-64 object-contain bg-gray-100 dark:bg-neutral-800"
-              />
+              <div className="p-4 pt-0 border-t border-gray-100/50 dark:border-neutral-800/50 mt-2">
+                <img
+                  src={receipt.image_url}
+                  alt="Receipt"
+                  className="w-full max-h-72 object-cover rounded-2xl shadow-inner bg-gray-100 dark:bg-neutral-900"
+                />
+              </div>
             )}
           </div>
         )}
 
-        {/* Description */}
-        <div className="mx-4 mt-4">
-          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">
-            Description
-          </label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white text-sm"
-          />
-        </div>
+        {/* Details Group */}
+        <div className="glass-panel rounded-3xl p-5 space-y-5 shadow-sm">
+          {/* Description */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">
+              Description
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-[15px] font-medium focus:ring-2 focus:ring-emerald-500 shadow-inner outline-none transition-all"
+            />
+          </div>
 
-        {/* Category */}
-        <div className="mx-4 mt-4">
-          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">
-            Category
-          </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white text-sm"
-          >
-            <option value="food_drink">🍔 Food & Drink</option>
-            <option value="transport">🚕 Transport</option>
-            <option value="shopping">🛒 Shopping</option>
-            <option value="entertainment">🎟️ Entertainment</option>
-            <option value="bills">💡 Bills</option>
-            <option value="other">📦 Other</option>
-          </select>
-        </div>
+          {/* Category */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-[15px] font-medium focus:ring-2 focus:ring-emerald-500 shadow-inner outline-none transition-all appearance-none"
+            >
+              <option value="food_drink">🍔 Food & Drink</option>
+              <option value="transport">🚕 Transport</option>
+              <option value="shopping">🛒 Shopping</option>
+              <option value="entertainment">🎟️ Entertainment</option>
+              <option value="bills">💡 Bills</option>
+              <option value="other">📦 Other</option>
+            </select>
+          </div>
 
-        {/* Paid by */}
-        <div className="mx-4 mt-4">
-          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 block">
-            Paid by
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {[...members].sort((mA, mB) => (mA.id === currentUserId ? -1 : mB.id === currentUserId ? 1 : 0)).map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setPaidBy(m.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium haptic transition-colors ${
-                  paidBy === m.id
-                    ? 'bg-emerald-500 border-emerald-500 text-white'
-                    : 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                <Avatar name={m.name} size="sm" className="!w-5 !h-5 !text-[10px]" />
-                {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
-              </button>
-            ))}
+          {/* Paid by */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2 block ml-1">
+              Paid by
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {[...members].sort((mA, mB) => (mA.id === currentUserId ? -1 : mB.id === currentUserId ? 1 : 0)).map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setPaidBy(m.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-bold haptic transition-all shadow-sm ${
+                    paidBy === m.id
+                      ? 'bg-emerald-500 text-white shadow-emerald-500/20 scale-[1.02]'
+                      : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700/50'
+                  }`}
+                >
+                  <Avatar name={m.name} size="sm" className="!w-5 !h-5 !text-[10px] shadow-sm" />
+                  {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Items */}
-        <div className="mx-4 mt-4">
-          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 block">
-            Items ({includedItems.length} of {items.length} included)
-          </label>
-          <div className="space-y-2">
+        <div>
+          <div className="flex items-center justify-between mb-3 ml-1">
+            <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+              Items
+            </label>
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md">
+              {includedItems.length} of {items.length} included
+            </span>
+          </div>
+          <div className="space-y-3">
             {items.map((item, idx) => (
               <ItemCard
                 key={idx}
@@ -310,18 +333,27 @@ export default function ReceiptReviewPage() {
       </div>
 
       {/* Bottom confirm bar */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 px-4 py-3 pb-safe z-[60]">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-gray-600 dark:text-gray-400">Total</span>
-          <span className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(totalAmount)}</span>
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl border-t border-gray-200/50 dark:border-neutral-800/50 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] z-[60] shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-[15px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Total Amount</span>
+          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{formatCurrency(totalAmount)}</span>
         </div>
         <button
           onClick={handleConfirm}
           disabled={submitting || includedItems.length === 0}
-          className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-semibold rounded-xl transition-colors haptic flex items-center justify-center gap-2"
+          className="w-full py-4 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 disabled:dark:bg-emerald-900/50 disabled:text-white/50 text-white font-bold rounded-2xl transition-all haptic flex items-center justify-center gap-2 shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] text-[15px]"
         >
-          <Check size={18} />
-          {submitting ? 'Adding expense...' : 'Confirm & Add Expense'}
+          {submitting ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              <span>Saving Expense...</span>
+            </div>
+          ) : (
+            <>
+              <Check size={20} />
+              <span>Confirm & Split Expense</span>
+            </>
+          )}
         </button>
       </div>
     </div>

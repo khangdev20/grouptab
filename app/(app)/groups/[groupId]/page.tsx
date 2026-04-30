@@ -479,37 +479,66 @@ export default function GroupFeedPage() {
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 ml-3.5">{sender.name}</span>
               )}
               
-              <Link
-                href={`/groups/${groupId}/receipt/${meta?.receipt_id}`}
-                className="block w-full haptic"
-              >
-                <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm w-full">
-              {/* Header */}
-              <div className="bg-emerald-500 px-3.5 py-2.5 flex items-center gap-2">
-                <Receipt size={14} className="text-white flex-shrink-0" />
-                <span className="text-white text-xs font-semibold uppercase tracking-wide">Receipt scanned</span>
-              </div>
-              {/* Body */}
-              <div className="px-3.5 py-3">
-                <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{merchant}</p>
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  ${receiptAmount ? Number(receiptAmount).toFixed(2) : '—'}
-                </p>
-                <div className="flex items-center gap-3 mt-2">
-                  {itemsCount > 0 && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{itemsCount} item{itemsCount !== 1 ? 's' : ''}</span>
-                  )}
-                  {membersCount > 0 && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{membersCount} member{membersCount !== 1 ? 's' : ''}</span>
-                  )}
+              {isMine ? (
+                <Link
+                  href={`/groups/${groupId}/receipt/${meta?.receipt_id}`}
+                  className="block w-full haptic"
+                >
+                  <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm w-full">
+                    {/* Header */}
+                    <div className="bg-emerald-500 px-3.5 py-2.5 flex items-center gap-2">
+                      <Receipt size={14} className="text-white flex-shrink-0" />
+                      <span className="text-white text-xs font-semibold uppercase tracking-wide">Receipt scanned</span>
+                    </div>
+                    {/* Body */}
+                    <div className="px-3.5 py-3">
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{merchant}</p>
+                      <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                        ${receiptAmount ? Number(receiptAmount).toFixed(2) : '—'}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2">
+                        {itemsCount > 0 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{itemsCount} item{itemsCount !== 1 ? 's' : ''}</span>
+                        )}
+                        {membersCount > 0 && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{membersCount} member{membersCount !== 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* CTA */}
+                    <div className="border-t border-gray-100 dark:border-neutral-700 px-3.5 py-2 bg-gray-50 dark:bg-neutral-750">
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold text-center">Tap to split →</p>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-2xl overflow-hidden shadow-sm w-full opacity-80">
+                  {/* Header */}
+                  <div className="bg-emerald-500 px-3.5 py-2.5 flex items-center gap-2">
+                    <Receipt size={14} className="text-white flex-shrink-0" />
+                    <span className="text-white text-xs font-semibold uppercase tracking-wide">Receipt scanned</span>
+                  </div>
+                  {/* Body */}
+                  <div className="px-3.5 py-3">
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{merchant}</p>
+                    <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      ${receiptAmount ? Number(receiptAmount).toFixed(2) : '—'}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2">
+                      {itemsCount > 0 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{itemsCount} item{itemsCount !== 1 ? 's' : ''}</span>
+                      )}
+                      {membersCount > 0 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{membersCount} member{membersCount !== 1 ? 's' : ''}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* CTA */}
+                  <div className="border-t border-gray-100 dark:border-neutral-700 px-3.5 py-2 bg-gray-50 dark:bg-neutral-750">
+                    <p className="text-xs text-gray-500 font-semibold text-center">Waiting for {sender?.name?.split(' ')[0] ?? 'them'} to split...</p>
+                  </div>
                 </div>
-              </div>
-              {/* CTA */}
-              <div className="border-t border-gray-100 dark:border-neutral-700 px-3.5 py-2 bg-gray-50 dark:bg-neutral-750">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold text-center">Tap to split →</p>
-              </div>
-                </div>
-              </Link>
+              )}
             </div>
           </div>
         </div>
