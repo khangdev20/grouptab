@@ -1,17 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { LogOut, Moon, Sun, Bell } from 'lucide-react'
+import { LogOut, Moon, Sun, Bell, Edit2, Camera, Check } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [savingName, setSavingName] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -25,7 +31,10 @@ export default function ProfilePage() {
         .eq('id', user.id)
         .single()
 
-      if (data) setProfile(data)
+      if (data) {
+        setProfile(data)
+        setEditName(data.name)
+      }
       setLoading(false)
     }
     init()
@@ -38,6 +47,63 @@ export default function ProfilePage() {
     router.refresh()
   }
 
+  const handleNameSave = async () => {
+    if (!profile || !editName.trim() || editName.trim() === profile.name) {
+      setIsEditing(false)
+      return
+    }
+    setSavingName(true)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('profiles')
+      .update({ name: editName.trim() })
+      .eq('id', profile.id)
+
+    if (error) {
+      toast.error('Failed to update name')
+    } else {
+      setProfile({ ...profile, name: editName.trim() })
+      toast.success('Name updated')
+      setIsEditing(false)
+    }
+    setSavingName(false)
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    setUploading(true)
+    const toastId = toast.loading('Uploading avatar...')
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() || 'jpg'
+      const path = `avatars/${profile.id}_${Date.now()}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-media')
+        .upload(path, file, { contentType: file.type, upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('chat-media').getPublicUrl(path)
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
+      setProfile({ ...profile, avatar_url: publicUrl })
+      toast.success('Avatar updated', { id: toastId })
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload avatar', { id: toastId })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-dvh">
@@ -47,50 +113,105 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-neutral-950">
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      {/* Background glowing effects */}
+      <div className="absolute top-[-10%] left-[-20%] w-[400px] h-[400px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="absolute bottom-[20%] right-[-10%] w-[300px] h-[300px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="py-4">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Profile</h1>
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
+        <div className="py-3.5">
+          <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">Profile</h1>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scroll-area px-4 py-6 space-y-5 pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto scroll-area px-5 py-6 space-y-6 z-10">
         {/* Profile card */}
         {profile && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-5 flex flex-col items-center text-center">
-            <Avatar name={profile.name} size="xl" className="mb-3" />
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{profile.name}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{profile.email}</p>
+          <div className="glass-panel rounded-3xl p-6 flex flex-col items-center text-center relative shadow-md">
+            <div className="relative mb-4 group cursor-pointer" onClick={() => !uploading && fileInputRef.current?.click()}>
+              <Avatar name={profile.name} imageUrl={profile.avatar_url} size="xl" className="transition-opacity group-hover:opacity-80 shadow-lg w-20 h-20 text-3xl" />
+              <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                {uploading ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera size={28} className="text-white drop-shadow-md" />
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={uploading}
+              />
+              <div className="absolute bottom-0 right-0 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-neutral-800">
+                <Camera size={12} className="text-white" />
+              </div>
+            </div>
+
+            {isEditing ? (
+              <div className="flex items-center gap-2 mt-2 w-full max-w-[280px]">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-center text-[17px] font-bold outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                  autoFocus
+                  onKeyDown={(e) => e.key === 'Enter' && handleNameSave()}
+                />
+                <button
+                  onClick={handleNameSave}
+                  disabled={savingName || !editName.trim()}
+                  className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center disabled:opacity-50 flex-shrink-0 haptic shadow-sm shadow-emerald-500/20"
+                >
+                  <Check size={20} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-1">
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{profile.name}</h2>
+                <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-emerald-500 transition-colors haptic bg-gray-100 dark:bg-neutral-800 w-8 h-8 rounded-full flex items-center justify-center">
+                  <Edit2 size={14} />
+                </button>
+              </div>
+            )}
+            <p className="text-[15px] font-medium text-gray-500 dark:text-gray-400 mt-1.5">{profile.email}</p>
           </div>
         )}
 
         {/* App info */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
-          <div className="px-4 py-4 border-b border-gray-100 dark:border-neutral-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                  <span className="text-base">💸</span>
+        <div>
+          <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1">App Info</h3>
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <div className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                    <span className="text-xl">💸</span>
+                  </div>
+                  <span className="text-[15px] font-bold text-gray-900 dark:text-white">GroupTab</span>
                 </div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">GroupTab</span>
+                <span className="text-sm font-semibold text-gray-400 bg-gray-100 dark:bg-neutral-800 px-3 py-1 rounded-full">v1.0.0</span>
               </div>
-              <span className="text-xs text-gray-400">v1.0.0</span>
             </div>
           </div>
         </div>
 
         {/* Sign out */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-4 text-red-500 haptic"
-          >
-            <div className="w-9 h-9 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-              <LogOut size={16} className="text-red-500" />
-            </div>
-            <span className="text-sm font-semibold">Sign out</span>
-          </button>
+        <div>
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center shadow-sm">
+                <LogOut size={18} className="text-red-500" />
+              </div>
+              <span className="text-[15px] font-bold">Sign Out</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

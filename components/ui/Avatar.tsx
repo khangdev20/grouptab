@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 
 interface AvatarProps {
   name: string
+  imageUrl?: string | null
   size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
@@ -14,9 +15,23 @@ const sizeMap = {
   xl: 'w-16 h-16 text-xl',
 }
 
-export default function Avatar({ name, size = 'md', className }: AvatarProps) {
+export default function Avatar({ name, imageUrl, size = 'md', className }: AvatarProps) {
   const initials = getInitials(name)
   const color = generateAvatarColor(name)
+
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name}
+        className={cn(
+          'rounded-full object-cover flex-shrink-0 border border-gray-100 dark:border-neutral-800 bg-white dark:bg-neutral-800',
+          sizeMap[size],
+          className
+        )}
+      />
+    )
+  }
 
   return (
     <div
