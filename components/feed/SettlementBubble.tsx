@@ -34,45 +34,55 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
     setConfirming(true)
     const supabase = createClient()
 
+    // Step 1: Update settlements table
     const { error: settlementError } = await supabase
       .from('settlements')
       .update({ status: 'completed' })
       .eq('id', settlementId)
 
     if (settlementError) {
-      toast.error('Failed to confirm settlement')
+      console.error('[SettlementBubble] settlements update error:', settlementError)
+      toast.error('Failed to confirm payment')
       setConfirming(false)
       return
     }
 
+    // Step 2: Update message metadata so status persists on reload
+    const newMetadata = { ...meta, status: 'completed' }
     const { error: messageError } = await supabase
       .from('messages')
       .update({
-        metadata: { ...meta, status: 'completed' },
+        metadata: newMetadata,
         content: `${fromName} paid ${toName} ${formatCurrency(amount)}`
       })
       .eq('id', message.id)
 
     if (messageError) {
-      toast.error('Failed to update message')
+      console.error('[SettlementBubble] message update error:', messageError)
+      // settlements was updated, so still show as confirmed locally
+      // but warn user that display may reset on reload
+      toast.success('Payment confirmed! (Refresh may be needed)')
     } else {
-      // Immediately update UI — don't wait for realtime event
-      setLocalStatus('completed')
       toast.success('Payment confirmed!')
-      try {
-        await fetch('/api/push/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            groupId: message.group_id,
-            title: `Payment Confirmed`,
-            body: `Your payment of ${formatCurrency(amount)} was confirmed by ${toName.split(' ')[0]}.`,
-            url: `/groups/${message.group_id}`,
-            tag: 'settlement'
-          }),
-        })
-      } catch { /* best-effort */ }
     }
+
+    // Always update local UI immediately regardless of message update
+    setLocalStatus('completed')
+
+    try {
+      await fetch('/api/push/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId: message.group_id,
+          title: `Payment Confirmed`,
+          body: `Your payment of ${formatCurrency(amount)} was confirmed by ${toName.split(' ')[0]}.`,
+          url: `/groups/${message.group_id}`,
+          tag: 'settlement'
+        }),
+      })
+    } catch { /* best-effort */ }
+
     setConfirming(false)
   }
 
