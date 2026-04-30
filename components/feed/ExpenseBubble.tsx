@@ -31,34 +31,57 @@ export default function ExpenseBubble({ message, sender, isMine, showAvatar, sho
             <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 ml-3.5">{sender.name}</span>
           )}
 
-          <div className={`rounded-2xl overflow-hidden shadow-sm border w-full ${
-            isMine
-              ? 'bg-emerald-500 border-emerald-400'
-              : 'bg-white dark:bg-neutral-800 border-gray-200 dark:border-neutral-700'
-          }`}>
-            {/* Header bar */}
-            <div className={`px-3.5 py-2 flex items-center gap-2 ${
-              isMine ? 'bg-emerald-600/30' : 'bg-emerald-50 dark:bg-emerald-900/20'
-            }`}>
-              <Receipt size={13} className={isMine ? 'text-white/80' : 'text-emerald-500'} />
-              <span className={`text-[10px] font-semibold uppercase tracking-wide ${
-                isMine ? 'text-white/80' : 'text-emerald-600 dark:text-emerald-400'
-              }`}>Expense</span>
-            </div>
-
-            {/* Body */}
-            <div className="px-3.5 py-2.5">
-              <p className={`font-semibold text-sm ${isMine ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
-                {description}
-              </p>
-              <p className={`text-lg font-bold mt-0.5 ${isMine ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'}`}>
+          {isMine ? (
+            <div className="glass-panel p-4 rounded-3xl w-[250px] relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-transparent dark:from-emerald-500/5 border-emerald-200/30 dark:border-emerald-500/10 shadow-sm">
+              <div className="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-5 pointer-events-none text-emerald-600">
+                <Receipt size={100} />
+              </div>
+              
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/20 rounded-lg">
+                  <Receipt size={12} className="text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Expense</span>
+                </div>
+              </div>
+              
+              <p className="font-bold text-gray-900 dark:text-white text-base leading-tight truncate pr-2 relative z-10">{description}</p>
+              <p className="text-[26px] font-black text-emerald-600 dark:text-emerald-400 tracking-tight mt-0.5 relative z-10">
                 {formatCurrency(amount)}
               </p>
-              <p className={`text-[11px] mt-1 ${isMine ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
-                Paid by {isMine ? 'you' : paidBy} · {formatDate(message.created_at)}
-              </p>
+              
+              <div className="mt-4 pt-3 border-t border-emerald-100 dark:border-emerald-900/30 relative z-10">
+                <p className="text-[11px] font-medium text-emerald-800/60 dark:text-emerald-200/50">
+                  Paid by <span className="font-bold text-emerald-700 dark:text-emerald-300">you</span>
+                </p>
+                <p className="text-[10px] text-emerald-800/40 dark:text-emerald-200/30 mt-0.5">{formatDate(message.created_at)}</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="glass-panel p-4 rounded-3xl w-[250px] relative overflow-hidden opacity-95 shadow-sm">
+              <div className="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-5 pointer-events-none grayscale">
+                <Receipt size={100} />
+              </div>
+              
+              <div className="flex items-start justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-neutral-800 rounded-lg">
+                  <Receipt size={12} className="text-gray-500" />
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Expense</span>
+                </div>
+              </div>
+              
+              <p className="font-bold text-gray-900 dark:text-white text-base leading-tight truncate pr-2 relative z-10">{description}</p>
+              <p className="text-[26px] font-black text-gray-800 dark:text-gray-200 tracking-tight mt-0.5 relative z-10">
+                {formatCurrency(amount)}
+              </p>
+              
+              <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-neutral-700/50 relative z-10">
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                  Paid by <span className="font-bold text-gray-700 dark:text-gray-300">{paidBy}</span>
+                </p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{formatDate(message.created_at)}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
