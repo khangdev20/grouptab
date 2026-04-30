@@ -327,7 +327,7 @@ export default function ReceiptReviewPage() {
                     : 'bg-white dark:bg-neutral-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-700/50'
                     }`}
                 >
-                  <Avatar name={m.name} size="sm" className="!w-5 !h-5 !text-[10px] shadow-sm" />
+                  <Avatar name={m.name} imageUrl={m.avatar_url} size="sm" className="!w-5 !h-5 !text-[10px] shadow-sm" />
                   {m.id === currentUserId ? 'You' : m.name.split(' ')[0]}
                 </button>
               ))}

@@ -22,7 +22,7 @@ export default function ExpenseBubble({ message, sender, isMine, showAvatar, sho
       <div className={`flex items-end gap-[10px] w-full ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
         {!isMine && (
           <div className="w-7 flex-shrink-0">
-            {showAvatar && sender && <Avatar name={sender.name} size="sm" />}
+            {showAvatar && sender && <Avatar name={sender.name} imageUrl={sender.avatar_url} size="sm" />}
           </div>
         )}
 

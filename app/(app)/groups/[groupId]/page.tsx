@@ -470,7 +470,7 @@ export default function GroupFeedPage() {
           <div className={`flex items-end gap-[10px] w-full ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
             {!isMine && (
               <div className="w-7 flex-shrink-0">
-                {showAvatar && sender && <Avatar name={sender.name} size="sm" />}
+                {showAvatar && sender && <Avatar name={sender.name} imageUrl={sender.avatar_url} size="sm" />}
               </div>
             )}
             
@@ -554,7 +554,7 @@ export default function GroupFeedPage() {
         <Link href="/groups" className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
           <ArrowLeft size={20} />
         </Link>
-        {group && <Avatar name={group.name} size="md" />}
+        {group && <Avatar name={group.name} imageUrl={group.avatar_url} size="md" />}
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-gray-900 dark:text-white text-[15px] truncate">{group?.name ?? '...'}</h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">{Object.keys(profiles).length} members</p>
@@ -645,7 +645,7 @@ export default function GroupFeedPage() {
                       idx === mentionIndex ? 'bg-gray-100 dark:bg-neutral-700' : 'hover:bg-gray-50 dark:hover:bg-neutral-700/50'
                     }`}
                   >
-                    <Avatar name={profile.name} size="sm" />
+                    <Avatar name={profile.name} imageUrl={profile.avatar_url} size="sm" />
                     <span className="text-sm font-medium text-gray-900 dark:text-white">{profile.name}</span>
                   </button>
                 ))}

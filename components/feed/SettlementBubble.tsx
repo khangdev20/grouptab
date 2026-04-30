@@ -66,7 +66,7 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
         {/* Avatar slot — only for others so sender bubble sits flush right */}
         {!isMine && (
           <div className="w-7 flex-shrink-0">
-            {showAvatar && sender && <Avatar name={sender.name} size="sm" />}
+            {showAvatar && sender && <Avatar name={sender.name} imageUrl={sender.avatar_url} size="sm" />}
           </div>
         )}
 

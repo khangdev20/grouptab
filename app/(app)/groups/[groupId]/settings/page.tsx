@@ -101,7 +101,7 @@ export default function GroupSettingsPage() {
       <div className="flex-1 px-4 py-5 space-y-5 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
         {group && (
           <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex flex-col items-center text-center">
-            <Avatar name={group.name} size="xl" className="mb-3" />
+            <Avatar name={group.name} imageUrl={group.avatar_url} size="xl" className="mb-3" />
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">{group.name}</h2>
             {group.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{group.description}</p>}
           </div>
@@ -162,7 +162,7 @@ export default function GroupSettingsPage() {
           <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800">
             {members.map(({ profile, role }) => (
               <div key={profile.id} className="flex items-center gap-3 px-4 py-3.5">
-                <Avatar name={profile.name} size="md" />
+                <Avatar name={profile.name} imageUrl={profile.avatar_url} size="md" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{profile.id === currentUserId ? 'You' : profile.name}</p>
                 </div>

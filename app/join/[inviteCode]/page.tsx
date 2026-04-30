@@ -95,7 +95,7 @@ export default function JoinGroupPage() {
     <div className="flex flex-col min-h-dvh bg-white dark:bg-neutral-900 items-center justify-center px-6">
       {group && (
         <div className="w-full max-w-sm text-center">
-          <Avatar name={group.name} size="xl" className="mx-auto mb-4" />
+          <Avatar name={group.name} imageUrl={group.avatar_url} size="xl" className="mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Join {group.name}
           </h1>

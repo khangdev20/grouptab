@@ -97,7 +97,7 @@ export default function GroupsPage() {
               >
                 <div className="flex items-center gap-4">
                   <div className="shadow-sm rounded-full bg-white dark:bg-neutral-800 p-0.5">
-                    <Avatar name={group.name} size="lg" />
+                    <Avatar name={group.name} imageUrl={group.avatar_url} size="lg" />
                   </div>
                   <div className="flex-1 min-w-0 py-1">
                     <div className="flex items-center justify-between mb-0.5">

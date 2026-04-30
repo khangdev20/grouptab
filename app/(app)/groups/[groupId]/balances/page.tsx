@@ -155,7 +155,7 @@ export default function GroupBalancesPage() {
                     key={b.userId}
                     className="flex items-center gap-4 glass-panel p-4 rounded-3xl"
                   >
-                    <Avatar name={profile?.name ?? '?'} size="md" className="shadow-md" />
+                    <Avatar name={profile?.name ?? '?'} imageUrl={profile?.avatar_url} size="md" className="shadow-md" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-bold text-gray-900 dark:text-white truncate">
                         {isMe ? 'You' : profile?.name ?? 'Unknown'}
@@ -198,7 +198,7 @@ export default function GroupBalancesPage() {
                         className="flex flex-col gap-3 glass-panel p-4 rounded-3xl"
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar name={from?.name ?? '?'} size="md" className="shadow-md" />
+                          <Avatar name={from?.name ?? '?'} imageUrl={from?.avatar_url} size="md" className="shadow-md" />
                           <div className="flex-1 min-w-0">
                             <p className="text-[15px] text-gray-900 dark:text-white">
                               <span className="font-bold">{fromIsMe ? 'You' : from?.name}</span>
@@ -230,7 +230,7 @@ export default function GroupBalancesPage() {
                       className="flex flex-col gap-3 glass-panel p-4 rounded-3xl"
                     >
                       <div className="flex items-center gap-3">
-                        <Avatar name={from?.name ?? '?'} size="md" className="shadow-md" />
+                        <Avatar name={from?.name ?? '?'} imageUrl={from?.avatar_url} size="md" className="shadow-md" />
                         <div className="flex-1 min-w-0">
                           <p className="text-[15px] text-gray-900 dark:text-white">
                             <span className="font-bold">{fromIsMe ? 'You' : from?.name}</span>

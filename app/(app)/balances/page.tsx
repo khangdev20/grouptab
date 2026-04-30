@@ -142,7 +142,7 @@ export default function BalancesPage() {
                     href={`/groups/${group.id}/balances`}
                     className="flex items-center gap-4 glass-panel p-4 rounded-3xl haptic hover:scale-[0.98] transition-transform active:scale-95"
                   >
-                    <Avatar name={group.name} size="md" className="shadow-md" />
+                    <Avatar name={group.name} imageUrl={group.avatar_url} size="md" className="shadow-md" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-bold text-gray-900 dark:text-white truncate">{group.name}</p>
                       <p className={`text-xs font-semibold mt-0.5 ${netBalance > 0 ? 'text-green-500' : 'text-red-500'}`}>
