@@ -14,9 +14,7 @@ type ExpenseData = {
 }
 
 export default function StatisticsPage() {
-  const [period, setPeriod] = useState<'week' | 'month' | 'year' | 'custom'>('week')
-  const [customStart, setCustomStart] = useState('')
-  const [customEnd, setCustomEnd] = useState('')
+  const [period, setPeriod] = useState<'week' | 'month' | 'year'>('week')
   const [data, setData] = useState<ExpenseData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -56,27 +54,12 @@ export default function StatisticsPage() {
     } else if (period === 'year') {
       startDate = new Date(today.getFullYear(), 0, 1)
       return data.filter(item => new Date(item.expenses.created_at) >= startDate)
-    } else if (period === 'custom') {
-      let filtered = data
-      if (customStart) {
-        const start = new Date(customStart)
-        start.setHours(0, 0, 0, 0)
-        filtered = filtered.filter(item => new Date(item.expenses.created_at) >= start)
-      }
-      if (customEnd) {
-        const end = new Date(customEnd)
-        end.setHours(23, 59, 59, 999)
-        filtered = filtered.filter(item => new Date(item.expenses.created_at) <= end)
-      }
-      return filtered
     }
 
     return data
-  }, [data, period, customStart, customEnd])
+  }, [data, period])
 
   const chartData = useMemo(() => {
-    if (period === 'custom') return null
-
     const result = [
       { label: '', amount: 0, isCurrent: false },
       { label: '', amount: 0, isCurrent: false },
@@ -190,41 +173,6 @@ export default function StatisticsPage() {
           >
             This Year
           </button>
-          <button
-            onClick={() => setPeriod('custom')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'custom' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
-          >
-            Custom
-          </button>
-        </div>
-
-        <div 
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${period === 'custom' ? 'max-h-32 opacity-100 mb-6' : 'max-h-0 opacity-0 mb-0'}`}
-        >
-          <div className="flex items-center gap-3 p-3 bg-gray-100/50 dark:bg-neutral-800/30 rounded-3xl border border-gray-200/50 dark:border-neutral-700/50">
-            <div className="flex-1">
-              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1 block ml-2">Start</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={(e) => setCustomStart(e.target.value)}
-                  className="w-full pl-3 pr-2 py-2.5 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-sm font-medium shadow-sm transition-all dark:[color-scheme:dark]"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1 block ml-2">End</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className="w-full pl-3 pr-2 py-2.5 rounded-2xl border-0 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 text-sm font-medium shadow-sm transition-all dark:[color-scheme:dark]"
-                />
-              </div>
-            </div>
-          </div>
         </div>
         
         <div className="glass-panel p-6 rounded-3xl mb-6 flex flex-col items-center justify-center min-h-[160px]">
@@ -245,13 +193,14 @@ export default function StatisticsPage() {
                     const heightPercent = d.amount > 0 ? Math.max((d.amount / maxChartAmount) * 100, 5) : 2 // at least 2% height so bar is visible
                     return (
                       <div key={idx} className="flex flex-col items-center gap-2 h-full justify-end flex-1 max-w-[60px]">
-                        <div className="w-full relative flex items-end justify-center h-full group">
+                        <div className="w-full relative flex items-end justify-center h-full">
                           <div 
-                            className={`w-full rounded-md transition-all duration-500 ${d.isCurrent ? 'bg-emerald-500 shadow-sm' : 'bg-gray-200 dark:bg-neutral-800'}`}
+                            className={`w-full rounded-md transition-all duration-500 relative flex justify-center ${d.isCurrent ? 'bg-emerald-500 shadow-sm' : 'bg-gray-200 dark:bg-neutral-800'}`}
                             style={{ height: `${heightPercent}%` }}
-                          />
-                          <div className="absolute -top-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                            {formatCurrency(d.amount)}
+                          >
+                            <span className={`absolute -top-5 text-[10px] font-bold whitespace-nowrap ${d.isCurrent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                              ${Math.round(d.amount)}
+                            </span>
                           </div>
                         </div>
                         <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${d.isCurrent ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
