@@ -21,6 +21,7 @@
 html {
   overflow: hidden;
   height: 100%;
+  background: var(--background);
 }
 
 body {
@@ -29,6 +30,8 @@ body {
   font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overscroll-behavior: none;
   height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* ─── Premium UI Utilities ─────────────────────────────── */
@@ -73,14 +76,26 @@ body {
 }
 
 .mobile-frame {
-  max-width: 430px;
-  margin: 0 auto;
+  /* On actual mobile: fill 100% of screen with no gaps */
+  width: 100%;
   height: 100%;
   position: relative;
   overflow: hidden;
   background: var(--background);
   display: flex;
   flex-direction: column;
+}
+
+/* On desktop/tablet: show as centered phone frame */
+@media (min-width: 500px) {
+  body {
+    background: #1a1a1a;
+  }
+  .mobile-frame {
+    max-width: 430px;
+    margin: 0 auto;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  }
 }
 
 .scroll-area {

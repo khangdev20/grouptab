@@ -45,8 +45,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className={`${outfit.variable} bg-gray-100 dark:bg-neutral-900 font-sans`}>
-        <div className="mobile-frame shadow-2xl">
+      <body className={`${outfit.variable} font-sans`}>
+        <div className="mobile-frame">
           {children}
           <Toaster
             position="top-center"
