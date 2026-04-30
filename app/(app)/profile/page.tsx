@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { LogOut, Moon, Sun, Bell, Edit2, Camera, Check, ChevronRight, Wallet, Coffee } from 'lucide-react'
+import { LogOut, Moon, Sun, Bell, Edit2, Camera, Check, ChevronRight, Wallet, Coffee, Copy } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [savingName, setSavingName] = useState(false)
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showSupportModal, setShowSupportModal] = useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -240,18 +241,79 @@ export default function ProfilePage() {
         {/* Support */}
         <div className="mt-auto pt-4">
           <div className="glass-panel rounded-3xl overflow-hidden">
-            <a
-              href="https://www.buymeacoffee.com/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setShowSupportModal(true)}
               className="w-full flex items-center justify-center gap-3 px-5 py-4 text-amber-600 dark:text-amber-500 haptic hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors group"
             >
               <Coffee size={20} className="text-amber-500 group-hover:scale-110 transition-transform" />
               <span className="text-[15px] font-bold">Buy me a coffee</span>
-            </a>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Support Modal */}
+      {showSupportModal && (
+        <div 
+          className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-5 backdrop-blur-sm anim-fade-in"
+          onClick={(e) => e.target === e.currentTarget && setShowSupportModal(false)}
+        >
+          <div className="w-full max-w-sm bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl anim-scale-in">
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center">
+                <Coffee size={28} className="text-amber-500" />
+              </div>
+            </div>
+            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-2 text-center tracking-tight">Support GroupTab</h3>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-6 text-center leading-relaxed">
+              If you find this app helpful, consider buying me a coffee to support the development!
+            </p>
+            
+            <div className="space-y-3">
+              {/* PayPal */}
+              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700">
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">PayPal</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">khangvln@gmail.com</p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText('khangvln@gmail.com')
+                      toast.success('PayPal email copied!')
+                    }}
+                    className="p-2.5 bg-white dark:bg-neutral-700 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-600 shadow-sm transition-all haptic flex-shrink-0"
+                  >
+                    <Copy size={16} className="text-gray-600 dark:text-gray-300" />
+                  </button>
+                </div>
+              </div>
+
+              {/* PayID */}
+              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700">
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">PayID</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">0413 000 000</p>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText('0413 000 000')
+                      toast.success('PayID copied!')
+                    }}
+                    className="p-2.5 bg-white dark:bg-neutral-700 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-600 shadow-sm transition-all haptic flex-shrink-0"
+                  >
+                    <Copy size={16} className="text-gray-600 dark:text-gray-300" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowSupportModal(false)}
+              className="w-full mt-6 py-3.5 rounded-2xl bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white font-bold hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors haptic"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
