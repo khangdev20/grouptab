@@ -274,10 +274,10 @@ export default function ProfilePage() {
               <div className="p-4 rounded-2xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700">
                 <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">PayPal</p>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">khangvln@gmail.com</p>
+                  <p className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">lenhutkhangvo@gmail.com</p>
                   <button 
                     onClick={() => {
-                      navigator.clipboard.writeText('khangvln@gmail.com')
+                      navigator.clipboard.writeText('lenhutkhangvo@gmail.com')
                       toast.success('PayPal email copied!')
                     }}
                     className="p-2.5 bg-white dark:bg-neutral-700 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-600 shadow-sm transition-all haptic flex-shrink-0"
@@ -291,10 +291,10 @@ export default function ProfilePage() {
               <div className="p-4 rounded-2xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700">
                 <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">PayID</p>
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">0413 000 000</p>
+                  <p className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">0490407665</p>
                   <button 
                     onClick={() => {
-                      navigator.clipboard.writeText('0413 000 000')
+                      navigator.clipboard.writeText('0490407665')
                       toast.success('PayID copied!')
                     }}
                     className="p-2.5 bg-white dark:bg-neutral-700 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-600 shadow-sm transition-all haptic flex-shrink-0"
