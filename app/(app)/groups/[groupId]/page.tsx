@@ -221,9 +221,9 @@ export default function GroupFeedPage() {
       // @mention → targeted notify; otherwise broadcast new message
       const mentioned = trimmed.match(/@(\S+)/g)
       if (!mentioned) {
-        pushNotify(`💬 ${senderName} in ${groupName}`, trimmed.slice(0, 100), 'message')
+        pushNotify(`${senderName} in ${groupName}`, trimmed.slice(0, 100), 'message')
       } else {
-        pushNotify(`🔔 ${senderName} mentioned you`, `In ${groupName}: ${trimmed.slice(0, 80)}`, 'mention')
+        pushNotify(`${senderName} mentioned you`, `In ${groupName}: ${trimmed.slice(0, 80)}`, 'mention')
       }
     }
     setText('')
@@ -296,7 +296,7 @@ export default function GroupFeedPage() {
 
     toast.success('Expense added!')
     const paidName = profiles[expensePaidBy]?.name || 'Someone'
-    pushNotify(`💸 New expense in ${group?.name || 'your group'}`, `${paidName} added ${expenseDesc.trim()} — $${parseFloat(expenseAmount).toFixed(2)}`, 'expense')
+    pushNotify(`New expense in ${group?.name || 'your group'}`, `${paidName} added ${expenseDesc.trim()} — $${parseFloat(expenseAmount).toFixed(2)}`, 'expense')
     setExpenseDesc('')
     setExpenseCategory('other')
     setExpenseAmount('')
@@ -335,7 +335,7 @@ export default function GroupFeedPage() {
 
       toast.dismiss(toastId)
       const senderName = profiles[currentUserId]?.name || 'Someone'
-      pushNotify(`📷 ${senderName}`, `Sent an image in ${group?.name || 'your group'}`, 'message')
+      pushNotify(`${senderName}`, `Sent an image in ${group?.name || 'your group'}`, 'message')
     } catch (err: any) {
       toast.dismiss(toastId)
       toast.error(err?.message || 'Failed to send image')

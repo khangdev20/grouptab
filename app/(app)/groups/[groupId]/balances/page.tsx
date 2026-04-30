@@ -108,7 +108,7 @@ export default function GroupBalancesPage() {
 
     try {
       const paidName = isDebtor ? profiles[currentUserId]?.name?.split(' ')[0] : fromProfile?.name?.split(' ')[0]
-      const title = isDebtor ? `💸 ${paidName} paid you` : `✅ Payment recorded`
+      const title = isDebtor ? `${paidName} paid you` : `Payment recorded`
       const body = isDebtor ? `${paidName} marked ${formatCurrency(debt.amount)} as paid. Tap to confirm.` : `A payment of ${formatCurrency(debt.amount)} was recorded.`
       
       await fetch('/api/push/notify', {

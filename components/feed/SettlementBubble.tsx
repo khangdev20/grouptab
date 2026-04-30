@@ -62,7 +62,7 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             groupId: message.group_id,
-            title: `✅ Payment Confirmed`,
+            title: `Payment Confirmed`,
             body: `Your payment of ${formatCurrency(amount)} was confirmed by ${toName.split(' ')[0]}.`,
             url: `/groups/${message.group_id}`,
             tag: 'settlement'

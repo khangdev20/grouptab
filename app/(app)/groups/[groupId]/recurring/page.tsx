@@ -158,7 +158,7 @@ export default function RecurringPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           groupId,
-          title: `🔄 New recurring payment`,
+          title: `New recurring payment`,
           body: `${payerName} set up a ${frequency} payment for ${title.trim()} (${formatCurrency(parseFloat(amount))}).`,
           url: `/groups/${groupId}/recurring`,
           tag: 'recurring'
