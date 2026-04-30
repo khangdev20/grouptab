@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Group } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
@@ -10,6 +11,7 @@ import { formatDate } from '@/lib/utils'
 import { Plus } from 'lucide-react'
 
 export default function GroupsPage() {
+  const router = useRouter()
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -17,7 +19,7 @@ export default function GroupsPage() {
     const fetchGroups = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) { router.push('/login'); return }
 
       const { data } = await supabase
         .from('group_members')
