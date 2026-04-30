@@ -154,22 +154,22 @@ export default function StatisticsPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-5 z-10">
-        <div className="flex bg-gray-200/50 dark:bg-neutral-800/50 p-1 rounded-xl mb-4 overflow-x-auto scrollbar-hide">
+        <div className="flex bg-gray-200/50 dark:bg-neutral-800/50 p-1 rounded-xl mb-4">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'week' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'week' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
           >
             This Week
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'month' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'month' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
           >
             This Month
           </button>
           <button
             onClick={() => setPeriod('year')}
-            className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'year' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
+            className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${period === 'year' ? 'bg-white dark:bg-neutral-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}
           >
             This Year
           </button>
