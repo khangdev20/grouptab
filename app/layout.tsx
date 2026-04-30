@@ -51,6 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Toaster
             position="top-center"
+            containerStyle={{
+              top: 'calc(env(safe-area-inset-top, 0px) + 16px)'
+            }}
             toastOptions={{
               style: {
                 borderRadius: '12px',
