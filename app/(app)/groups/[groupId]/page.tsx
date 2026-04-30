@@ -573,7 +573,7 @@ export default function GroupFeedPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 scroll-area" ref={scrollAreaRef} onScroll={(e) => {
-        if (e.currentTarget.scrollTop === 0 && hasMore && !loadingMore) {
+        if (e.currentTarget.scrollTop < 150 && hasMore && !loadingMore) {
           loadMoreMessages()
         }
       }}>
