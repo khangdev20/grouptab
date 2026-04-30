@@ -132,42 +132,50 @@ export default function GroupSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-full bg-gray-50 dark:bg-neutral-950">
-        <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-          <div className="flex items-center gap-3 py-4">
+      <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+        <div className="absolute top-[-10%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+        <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-4 pt-safe shadow-sm">
+          <div className="flex items-center gap-3 py-3.5">
             <div className="w-9 h-9 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />
-            <div className="h-5 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse" />
+            <div className="h-6 w-40 bg-gray-200/60 dark:bg-neutral-800/60 rounded animate-pulse" />
           </div>
         </div>
-        <div className="flex-1 px-4 py-5 space-y-5 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex flex-col items-center text-center animate-pulse">
-            <div className="w-20 h-20 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 mb-3" />
-            <div className="h-5 w-32 bg-gray-200/60 dark:bg-neutral-800/60 rounded" />
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6 z-10">
+          <div className="glass-panel rounded-[28px] p-6 flex flex-col items-center text-center animate-pulse">
+            <div className="w-24 h-24 rounded-full bg-gray-200/60 dark:bg-neutral-800/60 mb-4" />
+            <div className="h-6 w-40 bg-gray-200/60 dark:bg-neutral-800/60 rounded mb-2" />
+            <div className="h-4 w-56 bg-gray-200/60 dark:bg-neutral-800/60 rounded" />
           </div>
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white dark:bg-neutral-900 rounded-2xl h-[72px] animate-pulse bg-gray-200/40 dark:bg-neutral-800/40" />
-          ))}
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="glass-panel rounded-3xl h-[76px] animate-pulse bg-gray-200/40 dark:bg-neutral-800/40" />
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-50 dark:bg-neutral-950">
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-gray-100 dark:border-neutral-800 px-4 pt-safe">
-        <div className="flex items-center gap-3 py-4">
-          <Link href={`/groups/${groupId}`} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 haptic">
+    <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="absolute top-[-10%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[20%] left-[-10%] w-[250px] h-[250px] bg-teal-400/10 dark:bg-teal-600/10 rounded-full blur-[60px] pointer-events-none z-0"></div>
+
+      <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-4 pt-safe shadow-sm">
+        <div className="flex items-center gap-3 py-3.5">
+          <Link href={`/groups/${groupId}`} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors haptic">
             <ArrowLeft size={20} />
           </Link>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Group Settings</h1>
+          <h1 className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">Group Settings</h1>
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-5 space-y-5 pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6 z-10 scroll-area">
+        {/* Profile Card */}
         {group && (
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 flex flex-col items-center text-center relative">
+          <div className="glass-panel p-6 rounded-[28px] flex flex-col items-center text-center relative shadow-sm">
             <div className="relative mb-4 group cursor-pointer" onClick={() => !uploading && fileInputRef.current?.click()}>
-              <Avatar name={group.name} imageUrl={group.avatar_url} size="xl" className="transition-opacity group-hover:opacity-80 shadow-lg w-20 h-20 text-3xl" />
+              <Avatar name={group.name} imageUrl={group.avatar_url} size="xl" className="transition-opacity group-hover:opacity-80 shadow-lg w-24 h-24 text-4xl" />
               <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                 {uploading ? (
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -183,138 +191,141 @@ export default function GroupSettingsPage() {
                 onChange={handleAvatarUpload}
                 disabled={uploading}
               />
-              <div className="absolute bottom-0 right-0 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-neutral-800">
-                <Camera size={12} className="text-white" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-md border-[3px] border-white dark:border-neutral-800">
+                <Camera size={14} className="text-white" />
               </div>
             </div>
 
             {isEditing ? (
-              <div className="w-full space-y-3 mt-2">
-                <div>
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Group Name"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-center text-base font-bold outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    value={editDesc}
-                    onChange={(e) => setEditDesc(e.target.value)}
-                    placeholder="Description (optional)"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white text-center text-sm outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
-                  />
-                </div>
-                <div className="flex gap-2 justify-center pt-1">
+              <div className="w-full space-y-3 mt-2 max-w-[280px]">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Group Name"
+                  className="w-full px-4 py-3 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-center text-[17px] font-bold outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="w-full px-4 py-3 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-center text-[15px] font-medium outline-none focus:ring-2 focus:ring-emerald-500 shadow-inner"
+                />
+                <div className="flex gap-3 justify-center pt-2">
                   <button
                     onClick={() => {
                       setIsEditing(false)
                       setEditName(group.name)
                       setEditDesc(group.description || '')
                     }}
-                    className="px-4 py-2 rounded-xl border border-gray-200 dark:border-neutral-700 text-gray-600 dark:text-gray-400 text-sm font-semibold haptic flex items-center gap-1.5"
+                    className="flex-1 py-3 rounded-2xl bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 font-bold haptic transition-colors hover:bg-gray-200 dark:hover:bg-neutral-700"
                   >
-                    <X size={16} /> Cancel
+                    Cancel
                   </button>
                   <button
                     onClick={handleSaveDetails}
                     disabled={savingDetails || !editName.trim()}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold haptic disabled:opacity-50 flex items-center gap-1.5 shadow-sm shadow-emerald-500/20"
+                    className="flex-1 py-3 rounded-2xl bg-emerald-500 text-white font-bold haptic disabled:opacity-50 shadow-sm shadow-emerald-500/20 transition-transform"
                   >
-                    <Check size={16} /> Save
+                    Save
                   </button>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center w-full">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{group.name}</h2>
-                  <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-emerald-500 transition-colors haptic bg-gray-100 dark:bg-neutral-800 w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Edit2 size={12} />
+                  <h2 className="text-[22px] font-black text-gray-900 dark:text-white tracking-tight">{group.name}</h2>
+                  <button onClick={() => setIsEditing(true)} className="text-gray-400 hover:text-emerald-500 transition-colors haptic bg-gray-100 dark:bg-neutral-800 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Edit2 size={14} />
                   </button>
                 </div>
-                {group.description && <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{group.description}</p>}
+                {group.description && <p className="text-[15px] font-medium text-gray-500 dark:text-gray-400 mt-1">{group.description}</p>}
               </div>
             )}
           </div>
         )}
 
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
-          <button onClick={copyInviteLink} className="w-full flex items-center gap-3 px-4 py-4 haptic">
-            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-              <UserPlus size={16} className="text-emerald-500" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Invite members</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Code: {group?.invite_code}</p>
-            </div>
-            <Copy size={16} className="text-gray-400" />
-          </button>
+        {/* Options */}
+        <div className="space-y-4">
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <button onClick={copyInviteLink} className="w-full flex items-center gap-4 px-5 py-4 haptic hover:bg-gray-50/50 dark:hover:bg-neutral-800/50 transition-colors">
+              <div className="w-11 h-11 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+                <UserPlus size={18} className="text-emerald-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[15px] font-bold text-gray-900 dark:text-white">Invite members</p>
+                <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">Code: <span className="font-mono text-emerald-600 dark:text-emerald-400">{group?.invite_code}</span></p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
+                <Copy size={14} className="text-gray-500" />
+              </div>
+            </button>
+          </div>
+
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <Link href={`/groups/${groupId}/recurring`} className="w-full flex items-center gap-4 px-5 py-4 haptic hover:bg-gray-50/50 dark:hover:bg-neutral-800/50 transition-colors">
+              <div className="w-11 h-11 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
+                <RefreshCw size={18} className="text-blue-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[15px] font-bold text-gray-900 dark:text-white">Recurring payments</p>
+                <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">Set reminders for regular costs</p>
+              </div>
+            </Link>
+          </div>
+
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <button onClick={togglePush} disabled={pushLoading || permission === 'denied'} className="w-full flex items-center gap-4 px-5 py-4 haptic disabled:opacity-50 hover:bg-gray-50/50 dark:hover:bg-neutral-800/50 transition-colors">
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${subscribed ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-gray-100 dark:bg-neutral-800'}`}>
+                {subscribed
+                  ? <Bell size={18} className="text-amber-500" />
+                  : <BellOff size={18} className="text-gray-400" />}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-[15px] font-bold text-gray-900 dark:text-white">
+                  {pushLoading ? 'Updating…' : subscribed ? 'Notifications on' : 'Notifications off'}
+                </p>
+                <p className="text-[13px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">
+                  {permission === 'denied'
+                    ? 'Blocked in browser settings'
+                    : 'Expenses, mentions & reminders'}
+                </p>
+              </div>
+              <div className={`w-12 h-7 rounded-full transition-colors flex items-center px-1 flex-shrink-0 ${subscribed ? 'bg-amber-500' : 'bg-gray-200 dark:bg-neutral-700'}`}>
+                <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${subscribed ? 'translate-x-5' : 'translate-x-0'}`} />
+              </div>
+            </button>
+          </div>
         </div>
 
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
-          <Link href={`/groups/${groupId}/recurring`} className="w-full flex items-center gap-3 px-4 py-4 haptic">
-            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-              <RefreshCw size={16} className="text-emerald-500" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Recurring payments</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Set reminders for regular costs</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Notifications toggle */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
-          <button onClick={togglePush} disabled={pushLoading || permission === 'denied'} className="w-full flex items-center gap-3 px-4 py-4 haptic disabled:opacity-50">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${subscribed ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-gray-100 dark:bg-neutral-800'}`}>
-              {subscribed
-                ? <Bell size={16} className="text-emerald-500" />
-                : <BellOff size={16} className="text-gray-400" />}
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {pushLoading ? 'Updating…' : subscribed ? 'Notifications on' : 'Notifications off'}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {permission === 'denied'
-                  ? 'Blocked in browser settings'
-                  : 'Expenses, mentions & reminders'}
-              </p>
-            </div>
-            {/* Toggle pill */}
-            <div className={`w-11 h-6 rounded-full transition-colors ${subscribed ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-neutral-700'}`}>
-              <div className={`w-5 h-5 bg-white rounded-full shadow mt-0.5 transition-transform ${subscribed ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
-            </div>
-          </button>
-        </div>
-
+        {/* Members */}
         <div>
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 px-1">Members ({members.length})</p>
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800">
+          <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1">Members ({members.length})</h3>
+          <div className="glass-panel rounded-3xl overflow-hidden divide-y divide-gray-100/50 dark:divide-neutral-800/50">
             {members.map(({ profile, role }) => (
-              <div key={profile.id} className="flex items-center gap-3 px-4 py-3.5">
+              <div key={profile.id} className="flex items-center gap-4 px-5 py-4">
                 <Avatar name={profile.name} imageUrl={profile.avatar_url} size="md" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">{profile.id === currentUserId ? 'You' : profile.name}</p>
+                  <p className="text-[15px] font-bold text-gray-900 dark:text-white">{profile.id === currentUserId ? 'You' : profile.name}</p>
                 </div>
-                {role === 'admin' && <span className="text-xs text-emerald-500 font-semibold bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">Admin</span>}
+                {role === 'admin' && <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-lg">Admin</span>}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl overflow-hidden">
-          <button onClick={handleLeave} className="w-full flex items-center gap-3 px-4 py-4 text-red-500 haptic">
-            <div className="w-9 h-9 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-              <LogOut size={16} className="text-red-500" />
-            </div>
-            <span className="text-sm font-semibold">Leave group</span>
-          </button>
+        {/* Leave */}
+        <div className="pt-2">
+          <div className="glass-panel rounded-3xl overflow-hidden">
+            <button onClick={handleLeave} className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
+              <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                <LogOut size={18} className="text-red-500" />
+              </div>
+              <span className="text-[15px] font-bold">Leave group</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
