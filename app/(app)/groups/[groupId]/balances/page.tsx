@@ -21,7 +21,7 @@ export default function GroupBalancesPage() {
   const [settling, setSettling] = useState<string | null>(null)
   const [pendingSettlements, setPendingSettlements] = useState<any[]>([])
   // remindMap: key = `${debtorId}-${creditorId}`, value = { count, windowStart }
-  const [remindMap, setRemindMap] = useState<Record<string, { count: number; windowStart: number }>>({}
+  const [remindMap, setRemindMap] = useState<Record<string, { count: number; windowStart: number }>>({})
 
   useEffect(() => {
     const init = async () => {

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       title: 'Payment reminder',
       body: `${creditorName} is reminding you to pay ${amount} in ${groupName}.`,
       url: `/groups/${groupId}/balances`,
-      tag: 'debt-reminder',
+      tag: 'reminder',
     })
 
     return NextResponse.json({ sent: true })
