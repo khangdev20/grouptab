@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import logo from '@/public/logo.svg'
 
 interface LogoProps {
   size?: number
@@ -9,7 +10,7 @@ interface LogoProps {
 export default function Logo({ size = 48, className = '', animated = false }: LogoProps) {
   return (
     <Image
-      src="/logo.svg"
+      src={logo}
       alt="GroupTab"
       width={size}
       height={size}
