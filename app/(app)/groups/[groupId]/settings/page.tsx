@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Group, Profile } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Copy, UserPlus, LogOut, RefreshCw, Bell, BellOff, Edit2, Camera, Check, X } from 'lucide-react'
+import { ArrowLeft, Copy, UserPlus, LogOut, RefreshCw, Bell, BellOff, Edit2, Camera, Trash2, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
@@ -25,7 +25,12 @@ export default function GroupSettingsPage() {
   const [editDesc, setEditDesc] = useState('')
   const [savingDetails, setSavingDetails] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [leavingGroup, setLeavingGroup] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Confirmation modal state
+  type ConfirmAction = 'leave' | 'delete' | null
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null)
 
   useEffect(() => {
     const init = async () => {
@@ -57,8 +62,73 @@ export default function GroupSettingsPage() {
 
   const handleLeave = async () => {
     if (!currentUserId) return
+    setLeavingGroup(true)
+    setConfirmAction(null)
     const supabase = createClient()
-    await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', currentUserId)
+
+    // 1. Check for outstanding debts
+    const { data: settlements } = await supabase
+      .from('settlements')
+      .select('*')
+      .eq('group_id', groupId)
+      .eq('status', 'pending')
+
+    const hasDebt = (settlements ?? []).some(
+      (s: any) => s.from_user_id === currentUserId || s.to_user_id === currentUserId
+    )
+    if (hasDebt) {
+      toast.error('You have outstanding debts. Settle up before leaving.')
+      setLeavingGroup(false)
+      return
+    }
+
+    // 2. If sole member — delete the entire group
+    if (members.length === 1) {
+      const { error } = await supabase.from('groups').delete().eq('id', groupId)
+      if (error) {
+        toast.error('Failed to delete group')
+        setLeavingGroup(false)
+        return
+      }
+      toast.success('Group deleted')
+      router.push('/groups')
+      return
+    }
+
+    const myRole = members.find(m => m.profile.id === currentUserId)?.role
+
+    // 3. If admin leaving — transfer admin to the most recently joined non-admin member
+    if (myRole === 'admin') {
+      const { data: otherMembers } = await supabase
+        .from('group_members')
+        .select('user_id, joined_at')
+        .eq('group_id', groupId)
+        .neq('user_id', currentUserId)
+        .order('joined_at', { ascending: false })
+        .limit(1)
+
+      if (otherMembers && otherMembers.length > 0) {
+        await supabase
+          .from('group_members')
+          .update({ role: 'admin' })
+          .eq('group_id', groupId)
+          .eq('user_id', otherMembers[0].user_id)
+      }
+    }
+
+    // 4. Remove self from group
+    const { error } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('user_id', currentUserId)
+
+    if (error) {
+      toast.error('Failed to leave group')
+      setLeavingGroup(false)
+      return
+    }
+
     toast.success('Left group')
     router.push('/groups')
   }
@@ -316,18 +386,96 @@ export default function GroupSettingsPage() {
           </div>
         </div>
 
-        {/* Leave */}
-        <div className="pt-2">
+        {/* Leave / Danger Zone */}
+        <div className="pt-2 pb-4">
           <div className="glass-panel rounded-3xl overflow-hidden">
-            <button onClick={handleLeave} className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors">
-              <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
-                <LogOut size={18} className="text-red-500" />
-              </div>
-              <span className="text-[15px] font-bold">Leave group</span>
-            </button>
+            {members.length === 1 ? (
+              <button
+                onClick={() => setConfirmAction('delete')}
+                className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors"
+              >
+                <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                  <Trash2 size={18} className="text-red-500" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-[15px] font-bold block">Delete group</span>
+                  <span className="text-[12px] text-red-400">You are the only member</span>
+                </div>
+              </button>
+            ) : (
+              <button
+                onClick={() => setConfirmAction('leave')}
+                disabled={leavingGroup}
+                className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-50"
+              >
+                <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                  <LogOut size={18} className="text-red-500" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-[15px] font-bold block">
+                    {leavingGroup ? 'Leaving…' : 'Leave group'}
+                  </span>
+                  {members.find(m => m.profile.id === currentUserId)?.role === 'admin' && members.length > 1 && (
+                    <span className="text-[12px] text-red-400">Admin will be transferred</span>
+                  )}
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center pb-[calc(2rem+env(safe-area-inset-bottom,0px))] px-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setConfirmAction(null)}
+          />
+
+          <div className="relative w-full max-w-[420px] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-neutral-800/50 p-6 space-y-5 anim-fade-up">
+            {/* Glow */}
+            <div className="absolute top-[-20%] right-[-5%] w-[140px] h-[140px] bg-red-400/15 rounded-full blur-[40px] pointer-events-none" />
+
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={22} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-black text-gray-900 dark:text-white">
+                  {confirmAction === 'delete' ? 'Delete group?' : 'Leave group?'}
+                </h3>
+                <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  {confirmAction === 'delete'
+                    ? 'This will permanently delete the group and all its data. This cannot be undone.'
+                    : members.find(m => m.profile.id === currentUserId)?.role === 'admin'
+                      ? 'Admin rights will be transferred to the most recent member before you leave.'
+                      : 'You will no longer have access to this group.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="flex-1 py-3.5 rounded-2xl bg-gray-100 dark:bg-neutral-800 text-[15px] font-bold text-gray-700 dark:text-gray-300 haptic"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAction === 'delete' ? handleLeave : handleLeave}
+                disabled={leavingGroup}
+                className="flex-1 py-3.5 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-[15px] font-bold haptic shadow-sm shadow-red-500/20 disabled:opacity-50 transition-colors"
+              >
+                {leavingGroup
+                  ? 'Processing…'
+                  : confirmAction === 'delete' ? 'Delete' : 'Leave'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
