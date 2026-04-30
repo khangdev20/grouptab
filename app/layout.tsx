@@ -38,14 +38,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className={`${outfit.variable} h-full bg-gray-100 dark:bg-neutral-900 font-sans`}>
+      <body className={`${outfit.variable} bg-gray-100 dark:bg-neutral-900 font-sans`}>
         <div className="mobile-frame shadow-2xl">
           {children}
           <Toaster
