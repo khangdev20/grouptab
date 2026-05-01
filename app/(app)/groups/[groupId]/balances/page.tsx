@@ -122,74 +122,88 @@ export default function GroupBalancesPage() {
 
   const handleSettle = async (debt: Debt) => {
     if (!currentUserId) return
-    setSettling(`${debt.from}-${debt.to}`)
+    const key = `${debt.from}-${debt.to}`
+    setSettling(key)
     const supabase = createClient()
 
     const fromProfile = profiles[debt.from]
     const toProfile = profiles[debt.to]
-
     const isDebtor = currentUserId === debt.from
-    const status = isDebtor ? 'pending' : 'completed'
 
-    const { data: settlement, error } = await supabase
-      .from('settlements')
-      .insert({
-        group_id: groupId,
-        from_user: debt.from,
-        to_user: debt.to,
-        amount: debt.amount,
-        status: status,
+    if (isDebtor) {
+      // ── DEBTOR: Mark Paid → create new PENDING settlement ──────────────
+      const { data: settlement, error } = await supabase
+        .from('settlements')
+        .insert({ group_id: groupId, from_user: debt.from, to_user: debt.to, amount: debt.amount, status: 'pending' })
+        .select().single()
+
+      if (error || !settlement) { toast.error('Failed to record settlement'); setSettling(null); return }
+
+      await supabase.from('messages').insert({
+        group_id: groupId, sender_id: currentUserId, type: 'settlement',
+        content: `${fromProfile?.name ?? 'Someone'} marked ${formatCurrency(debt.amount)} as paid. Waiting for confirmation.`,
+        metadata: { settlement_id: settlement.id, amount: debt.amount, from_user: debt.from, from_name: fromProfile?.name ?? '', to_user: debt.to, to_name: toProfile?.name ?? '', status: 'pending' },
       })
-      .select()
-      .single()
 
-    if (error) {
-      toast.error('Failed to record settlement')
-      setSettling(null)
-      return
+      toast.success('Settlement submitted for confirmation!')
+      try {
+        await fetch('/api/push/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupId, title: `${fromProfile?.name?.split(' ')[0]} paid you`, body: `${fromProfile?.name?.split(' ')[0]} marked ${formatCurrency(debt.amount)} as paid. Tap to confirm.`, url: `/groups/${groupId}/balances`, tag: 'settlement' }) })
+      } catch { /* best-effort */ }
+
+    } else {
+      // ── CREDITOR: Confirm Received → UPDATE existing pending settlements ──
+      const existingPending = pendingSettlements.filter(s => s.from_user === debt.from && s.to_user === debt.to)
+
+      if (existingPending.length > 0) {
+        // Update all matching pending → completed
+        for (const s of existingPending) {
+          await supabase.from('settlements').update({ status: 'completed' }).eq('id', s.id)
+          // Also update the linked message metadata so chat bubble shows "Settled"
+          await supabase.from('messages')
+            .update({ metadata: { settlement_id: s.id, amount: s.amount, from_user: s.from_user, from_name: fromProfile?.name ?? '', to_user: s.to_user, to_name: toProfile?.name ?? '', status: 'completed' }, content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(s.amount)}` })
+            .eq('type', 'settlement')
+            .contains('metadata', { settlement_id: s.id })
+        }
+        // Remove confirmed ones from local state so button disappears immediately
+        setPendingSettlements(prev => prev.filter(s => !(s.from_user === debt.from && s.to_user === debt.to)))
+        toast.success('Payment confirmed!')
+      } else {
+        // No pending exists — insert completed directly (manual confirm)
+        const { data: settlement, error } = await supabase
+          .from('settlements')
+          .insert({ group_id: groupId, from_user: debt.from, to_user: debt.to, amount: debt.amount, status: 'completed' })
+          .select().single()
+        if (error || !settlement) { toast.error('Failed to confirm'); setSettling(null); return }
+        await supabase.from('messages').insert({
+          group_id: groupId, sender_id: currentUserId, type: 'settlement',
+          content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(debt.amount)}`,
+          metadata: { settlement_id: settlement.id, amount: debt.amount, from_user: debt.from, from_name: fromProfile?.name ?? '', to_user: debt.to, to_name: toProfile?.name ?? '', status: 'completed' },
+        })
+        toast.success('Payment confirmed!')
+      }
+
+      try {
+        await fetch('/api/push/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupId, title: 'Payment Confirmed', body: `Your payment of ${formatCurrency(debt.amount)} was confirmed.`, url: `/groups/${groupId}/balances`, tag: 'settlement' }) })
+      } catch { /* best-effort */ }
     }
 
-    await supabase.from('messages').insert({
-      group_id: groupId,
-      sender_id: currentUserId,
-      type: 'settlement',
-      content: isDebtor 
-        ? `${fromProfile?.name ?? 'Someone'} marked ${formatCurrency(debt.amount)} as paid. Waiting for confirmation.`
-        : `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(debt.amount)}`,
-      metadata: {
-        settlement_id: settlement.id,
-        amount: debt.amount,
-        from_user: debt.from,
-        from_name: fromProfile?.name ?? '',
-        to_user: debt.to,
-        to_name: toProfile?.name ?? '',
-        status: status,
-      },
-    })
-
-    toast.success(isDebtor ? 'Settlement submitted for confirmation!' : 'Settlement recorded!')
     setSettling(null)
-
-    try {
-      const paidName = isDebtor ? profiles[currentUserId]?.name?.split(' ')[0] : fromProfile?.name?.split(' ')[0]
-      const title = isDebtor ? `${paidName} paid you` : `Payment recorded`
-      const body = isDebtor ? `${paidName} marked ${formatCurrency(debt.amount)} as paid. Tap to confirm.` : `A payment of ${formatCurrency(debt.amount)} was recorded.`
-      
-      await fetch('/api/push/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId,
-          title,
-          body,
-          url: `/groups/${groupId}`,
-          tag: 'settlement'
-        }),
-      })
-    } catch { /* best-effort */ }
-
     router.push(`/groups/${groupId}`)
   }
+
+  // Re-fetch settlements when page regains focus (keeps in sync with chat bubble confirmations)
+  useEffect(() => {
+    const refetchSettlements = async () => {
+      const supabase = createClient()
+      const { data: settlements } = await supabase.from('settlements').select('*').eq('group_id', groupId)
+      if (settlements) setPendingSettlements(settlements.filter((s: any) => s.status === 'pending'))
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') refetchSettlements() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [groupId])
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
@@ -273,6 +287,10 @@ export default function GroupBalancesPage() {
                     .filter((s) => s.from_user === debt.from && s.to_user === debt.to)
                     .reduce((sum, s) => sum + s.amount, 0)
                   const remainingDebt = debt.amount - pendingAmount
+                  // Reverse pending: a settlement going the OPPOSITE direction (will conflict when confirmed)
+                  const reversePendingAmount = pendingSettlements
+                    .filter((s) => s.from_user === debt.to && s.to_user === debt.from)
+                    .reduce((sum, s) => sum + s.amount, 0)
 
                   if (remainingDebt <= 0 && pendingAmount > 0) {
                     return (
@@ -323,11 +341,18 @@ export default function GroupBalancesPage() {
                             <span className="font-bold">{toIsMe ? 'you' : to?.name}</span>
                           </p>
                           <p className="text-sm font-black text-emerald-500 mt-0.5">{formatCurrency(remainingDebt)}</p>
-                          {/* Show pending amount notice when mixed state */}
+                          {/* Pending same-direction notice */}
                           {pendingAmount > 0 && (
                             <p className="text-[11px] font-semibold text-amber-500 mt-0.5 flex items-center gap-1">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                               {formatCurrency(pendingAmount)} pending confirmation
+                            </p>
+                          )}
+                          {/* Reverse pending warning: debt direction flipped after a pending was created */}
+                          {reversePendingAmount > 0 && (
+                            <p className="text-[11px] font-semibold text-orange-500 mt-0.5 flex items-center gap-1">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                              {toIsMe ? `Your` : `${to?.name?.split(' ')[0]}'s`} {formatCurrency(reversePendingAmount)} payment is pending — confirm it first
                             </p>
                           )}
                         </div>
@@ -336,11 +361,12 @@ export default function GroupBalancesPage() {
                         {fromIsMe && (
                           <button
                             onClick={() => handleSettle({ ...debt, amount: remainingDebt })}
-                            disabled={settling === key}
-                            className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                            disabled={settling === key || reversePendingAmount > 0}
+                            title={reversePendingAmount > 0 ? 'Wait for the reverse pending payment to be confirmed first' : undefined}
+                            className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-emerald-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
                           >
                             <CheckCircle2 size={16} />
-                            {settling === key ? '...' : 'Mark Paid'}
+                            {settling === key ? '...' : reversePendingAmount > 0 ? 'Awaiting confirm…' : 'Mark Paid'}
                           </button>
                         )}
                         {toIsMe && (() => {
