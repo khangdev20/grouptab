@@ -1,5 +1,5 @@
 # GroupTab — Project Documentation
-> Updated: 2026-05-01
+> Updated: 2026-05-01 (Session 2)
 
 ---
 
@@ -23,11 +23,11 @@ app/
 ├── (app)/                    # Authenticated routes (layout with auth guard)
 │   ├── groups/               # Group list + join by code
 │   ├── groups/[groupId]/     # Chat feed (main)
-│   │   ├── balances/         # Per-group settle up
+│   │   ├── balances/         # Per-group settle up + debt breakdown
 │   │   ├── receipt/[id]/     # OCR receipt review + split
 │   │   ├── recurring/        # Recurring payment schedules
 │   │   └── settings/         # Group settings + leave/delete
-│   ├── balances/             # Global balances across all groups
+│   ├── balances/             # Global balances across all groups (batch-optimized)
 │   ├── statistics/           # Personal expense stats by category
 │   └── profile/              # User profile settings
 ├── join/[inviteCode]/        # Public join page
@@ -44,7 +44,7 @@ hooks/
 ├── useGroupBalances.ts       # Realtime balance calculation + settlements
 ├── useExpense.ts             # CRUD expense
 ├── useSettlement.ts          # Mark paid + confirm received
-├── useRemindDebtor.ts        # Rate-limited debt reminders
+├── useRemindDebtor.ts        # Rate-limited debt reminders (localStorage)
 └── usePushNotifications.ts   # Web Push subscribe/unsubscribe
 
 components/
@@ -57,7 +57,7 @@ components/
 │   ├── ChatHeader.tsx        # Nav header
 │   └── ExpenseModal.tsx      # Add/Edit expense form
 ├── balances/
-│   ├── DebtCard.tsx          # Debt row (Mark Paid / Confirm Received)
+│   ├── DebtCard.tsx          # Debt row with expandable breakdown + actions
 │   └── PendingDebtCard.tsx   # Amber pending-only card
 ├── receipt/
 │   └── ItemCard.tsx          # Receipt item assignment
@@ -68,10 +68,11 @@ components/
 lib/
 ├── types.ts                  # All TypeScript types
 ├── utils.ts                  # formatCurrency, calculateBalances, simplifyDebts,
-│                             # pushGroupNotify, getRateLimitState, etc.
+│                             # pushGroupNotify, getRateLimitState, incrementRateLimit,
+│                             # getDebtBreakdown, DebtBreakdownItem
 └── supabase/
     ├── client.ts             # Supabase client singleton
-    └── queries.ts            # Reusable DB query functions
+    └── queries.ts            # Centralized DB query functions
 ```
 
 ---
@@ -93,12 +94,8 @@ lib/
 | `recurring_payments` | group_id, title, amount, frequency, next_due_date, involved_members |
 | `push_subscriptions` | user_id, endpoint, keys |
 
-**RLS**: All tables have Row Level Security. Key policies:
-- Groups: members can SELECT, admins can UPDATE/DELETE
-- Messages: members can INSERT/SELECT, UPDATE own messages
-- Expenses/Shares: members can INSERT/SELECT
-- Settlements: members can INSERT/SELECT/UPDATE
-- `010_group_delete_policy.sql` — admin DELETE policy (must apply to Supabase manually)
+> [!IMPORTANT]
+> `010_group_delete_policy.sql` must be applied manually in Supabase Dashboard → SQL Editor for admin Delete Group to work.
 
 ---
 
@@ -111,7 +108,7 @@ lib/
 
 ### Groups
 - [x] Create group (name, description, avatar)
-- [x] Group list with member count + last activity
+- [x] Group list sorted by **last message date** with message preview
 - [x] Join group via invite link (`/join/{code}`)
 - [x] Join group via code entry (modal with # icon)
 - [x] Invite link copy in settings
@@ -144,20 +141,25 @@ lib/
 - [x] Real-time sync via Supabase subscriptions (settlements + expense_shares)
 - [x] Refetch on visibility change
 - [x] Mark Paid → creates pending settlement
-- [x] Confirm Received → updates existing pending to completed (not insert)
-- [x] Pending confirmation notice shown inline when mixed state
+- [x] Confirm Received → updates existing pending to completed
+- [x] Pending confirmation notice shown inline
 - [x] "Pay Now" button on ExpenseBubble → navigates to balances page
-- [x] Pay Now hidden if debt already settled (checks settledPairs)
+- [x] **Debt Breakdown** — expandable per-expense list explaining why a debt exists
+  - Shows which expenses created the debt (owed direction 🔴)
+  - Shows which expenses reduce it (offset direction 🟢)
+  - Category emoji, date, total amount, share amount
+  - Net summary at bottom
 
 ### Settlements / Balances Page
 - [x] Per-member balance chip
 - [x] Debt cards (DebtCard + PendingDebtCard)
 - [x] Remind debtor push notification (rate-limited: 2 per 48h, localStorage)
 - [x] "All settled up" empty state
+- [x] Stays on balances page after settling (no redirect)
 
-### Global Balances
-- [x] `/balances` page: net balance across all groups
-- [x] Per-group summary card with link to group balances
+### Global Balances (`/balances`)
+- [x] Net balance across all groups — **batch-optimized** (4 queries total, no N+1)
+- [x] Per-group summary card sorted by imbalance size
 
 ### Receipt OCR
 - [x] Upload receipt photo
@@ -173,7 +175,7 @@ lib/
 
 ### Push Notifications
 - [x] Subscribe/unsubscribe in group settings
-- [x] Push on new message, @mention, expense added, settlement submitted/confirmed, debt reminder
+- [x] Push on: new message, @mention, expense added, settlement submitted/confirmed, debt reminder
 
 ### Statistics
 - [x] Personal expense stats by category (week/month/year filter)
@@ -181,40 +183,37 @@ lib/
 
 ---
 
-## 5. ⚠️ Known UX/Logic Issues
+## 5. ⚠️ Known Issues (Remaining)
 
 ### 🔴 Critical
 
 | # | Issue | Location | Detail |
 |---|---|---|---|
-| 1 | **`010` migration not auto-applied** | Supabase | `Delete group` returns error for admin until SQL is manually run in Supabase Dashboard |
-| 2 | **Leave group debt check uses wrong column** | `settings/page.tsx:77` | Checks `s.from_user_id` / `s.to_user_id` but schema uses `from_user` / `to_user` → debt check always passes (never blocks leave) |
-| 3 | **`settledPairs` not updated on new settlements** | `useGroupChat.ts` | `settledPairs` is fetched once on init. If a settlement is confirmed while the user is in the chat, "Pay Now" button won't hide without a page reload |
+| 1 | **`010` migration not auto-applied** | Supabase | Delete group returns RLS error until SQL is run manually |
+| 2 | **Leave group debt check uses wrong column** | `settings/page.tsx:77` | Uses `from_user_id` / `to_user_id` but schema has `from_user` / `to_user` → debt guard never blocks |
+| 3 | **`settledPairs` not updated on new settlements** | `useGroupChat.ts` | Fetched once at init; "Pay Now" won't auto-hide until page reload |
 
 ### 🟠 Logic Issues
 
 | # | Issue | Location | Detail |
 |---|---|---|---|
-| 4 | **Reverse-direction pending settlement** | `useSettlement.ts` | If A marks $6 paid to B (pending), then a new expense reverses the direction (B now owes A), confirming the old A→B settlement will make balances WORSE (add to debt instead of reducing). No warning shown in chat. |
-| 5 | **Delete expense with existing settlements** | `useExpense.ts:handleDelete` | Deleting an expense only removes `expense_shares` + `expenses` + `message`. If settlements referencing that expense's debt exist, they remain in DB and distort balance. |
-| 6 | **Remind debtor rate limit in localStorage** | `useRemindDebtor.ts` | Easily bypassed (clear storage). Different devices have independent limits. Should be DB-backed. |
-| 7 | **Recurring payments — no auto-trigger** | `recurring/page.tsx` | Recurring payments are UI-only. `next_due_date` is stored but nothing auto-creates expenses when due. Requires a cron job / Supabase Edge Function. |
-| 8 | **Receipt OCR fallback for non-itemized receipts** | `receipt/[receiptId]/page.tsx` | If OCR returns no items (only total), the review page shows an empty item list with no fallback to manual split. User is stuck. |
+| 4 | **Reverse-direction pending settlement** | `useSettlement.ts` | Confirming A→B while B→A expense added can worsen balance |
+| 5 | **Delete expense with existing settlements** | `useExpense.ts` | Settlements referencing deleted expense debt remain in DB |
+| 6 | **Remind debtor rate limit in localStorage** | `useRemindDebtor.ts` | Bypassable by clearing storage; not cross-device |
+| 7 | **Recurring payments — no auto-trigger** | `recurring/page.tsx` | UI only; no cron/Edge Function to auto-create expenses |
+| 8 | **Receipt OCR: no fallback for no-item receipts** | `receipt/[receiptId]` | Empty item list with no manual split fallback |
 
 ### 🟡 UX Issues
 
 | # | Issue | Location | Detail |
 |---|---|---|---|
-| 9 | **Sign up shows "Failed" toast but succeeds** | `register/page.tsx` | Email confirmation flow causes error toast even when registration succeeds. Needs "Check your email" state instead of error. |
-| 10 | **Balance page navigates away after settle** | `useSettlement.ts:onDone` | After Mark Paid or Confirm, user is sent back to chat. Many users would prefer to stay on balances page to settle other debts. |
-| 11 | **No empty state for balances member list** | `balances/page.tsx` | If all balances are exactly $0 (including self), the Members section shows nothing — confusing. |
-| 12 | **ExpenseModal doesn't restore involvedMembers on edit** | `useExpense.ts:openEdit` | The edit form falls back to `Object.keys(profiles)` if `meta.involvedMembers` is undefined (old expenses before the field was added). |
-| 13 | **No confirmation when deleting expense from chat** | `ExpenseBubble.tsx` | Delete runs immediately without a confirmation step — easy to accidentally tap. |
-| 14 | **Mention dropdown z-index on mobile** | `groups/[groupId]/page.tsx` | On small screens the @mention dropdown may appear behind the keyboard on iOS. |
-| 15 | **Image bubbles have no lightbox** | `MessageBubble.tsx` | Tapping an image in chat doesn't open a fullscreen view. |
-| 16 | **Statistics page is global, not per-group** | `statistics/page.tsx` | Stats mix expenses from all groups. No way to filter by group. |
-| 17 | **Group list not sorted by latest activity** | `groups/page.tsx` | Groups are ordered by `joined_at` (when you joined), not by most recent message/expense. |
-| 18 | **No loading skeleton in balances page** | `balances/page.tsx` | Loading state shows only 3 placeholder blocks regardless of actual debt count. |
+| 9 | **Sign up shows "Failed" toast but succeeds** | `register/page.tsx` | Needs "Check your email" state instead of error |
+| 10 | **No confirmation when deleting expense** | `ExpenseBubble.tsx` | Delete runs immediately — easy accidental tap |
+| 11 | **No empty state for Members list when all $0** | `balances/page.tsx` | Confusing blank section |
+| 12 | **ExpenseModal doesn't restore involvedMembers on edit** | `useExpense.ts` | Falls back to all members for old expenses without `involvedMembers` in metadata |
+| 13 | **Mention dropdown z-index on mobile** | `groups/[groupId]/page.tsx` | May appear behind keyboard on iOS |
+| 14 | **Image bubbles have no lightbox** | `MessageBubble.tsx` | Tapping image doesn't open fullscreen |
+| 15 | **Statistics page is global, not per-group** | `statistics/page.tsx` | No group filter |
 
 ---
 
@@ -222,34 +221,34 @@ lib/
 
 | Item | Priority |
 |---|---|
-| `settings/page.tsx` still 500 lines — not yet refactored | Medium |
-| `recurring/page.tsx` 360 lines — no hook extraction | Low |
-| `receipt/[receiptId]/page.tsx` 390 lines — no extraction | Medium |
-| `app/(app)/balances/page.tsx` N+1 query per group (loop inside init) | High |
-| `pushGroupNotify` called from hooks directly — should use Server Action | Low |
-| No error boundary — any uncaught error crashes the whole page | Medium |
+| `settings/page.tsx` — 500 lines, not yet refactored into hooks/components | Medium |
+| `recurring/page.tsx` — 360 lines, no hook extraction | Low |
+| `receipt/[receiptId]/page.tsx` — 390 lines, no extraction | Medium |
+| No error boundary — uncaught error crashes entire page | Medium |
+| `pushGroupNotify` called from hooks directly (should be Server Action) | Low |
+| Remind rate-limit is localStorage-only (not cross-device) | Low |
 
 ---
 
 ## 7. Recommended Next Steps
 
 ### Priority 1 — Bug fixes
-1. **Fix leave-group debt check** — change `from_user_id` → `from_user` in `settings/page.tsx:77`
-2. **Fix settledPairs realtime** — subscribe to `settlements` in `useGroupChat` to update `settledPairs` live
-3. **Apply `010` migration** — run in Supabase Dashboard SQL editor
+1. Fix `from_user_id` → `from_user` in `settings/page.tsx:77` (leave group debt guard)
+2. Subscribe to `settlements` in `useGroupChat` to update `settledPairs` live
+3. Apply `010` migration in Supabase Dashboard
 
 ### Priority 2 — UX polish
-4. **Add confirmation dialog on expense delete** — reuse the pattern from settings leave/delete
-5. **Stay on balances page after settle** — remove `onDone: () => router.push(...)` or make it optional
-6. **Fix sign up error toast** — show "Check your email" for unconfirmed accounts
+4. Add confirm dialog on expense delete (`ExpenseBubble`)
+5. Fix sign up "Check your email" flow instead of error toast
+6. Add image lightbox to `MessageBubble`
 
 ### Priority 3 — Features
-7. **Image lightbox** — tap to fullscreen in MessageBubble
-8. **Recurring payment cron** — Supabase Edge Function scheduled to create expenses on `next_due_date`
-9. **Per-group statistics** — filter stats by groupId
-10. **Receipt fallback** — if no OCR items, allow manual total split in review page
+7. Recurring payment Edge Function / cron auto-trigger
+8. Per-group statistics filter
+9. Receipt OCR fallback for no-item receipts (manual amount input)
+10. Settlement note field ("Paid via Momo", "Cash", etc.)
 
 ### Priority 4 — Hardening
-11. **DB-backed rate limiting for reminders** — store remind counts in `settlements` metadata or separate table
-12. **N+1 fix in global balances page** — batch fetch all groups' shares and settlements in one query
-13. **Error boundaries** — wrap each page in `<ErrorBoundary>`
+11. DB-backed reminder rate limiting
+12. Error boundaries per page
+13. Split preview in expense modal (show net per person before saving)
