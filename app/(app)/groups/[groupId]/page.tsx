@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Group, Message, Profile } from '@/lib/types'
 import MessageBubble from '@/components/feed/MessageBubble'
-import ExpenseBubble from '@/components/feed/ExpenseBubble'
+import ExpenseBubble, { ExpenseMeta } from '@/components/feed/ExpenseBubble'
 import SettlementBubble from '@/components/feed/SettlementBubble'
 import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
@@ -29,6 +29,8 @@ export default function GroupFeedPage() {
   const [expensePaidBy, setExpensePaidBy] = useState('')
   const [involvedMembers, setInvolvedMembers] = useState<string[]>([])
   const [savingExpense, setSavingExpense] = useState(false)
+  // Edit mode: null = creating, non-null = editing existing
+  const [editingExpense, setEditingExpense] = useState<ExpenseMeta | null>(null)
   const [mentionQuery, setMentionQuery] = useState('')
   const [showMentions, setShowMentions] = useState(false)
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -281,43 +283,85 @@ export default function GroupFeedPage() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
 
+  const handleEditExpense = (meta: ExpenseMeta) => {
+    setEditingExpense(meta)
+    setExpenseDesc(meta.description)
+    setExpenseAmount(String(meta.amount))
+    setExpensePaidBy(meta.paidBy)
+    setExpenseCategory(meta.category ?? 'other')
+    setShowExpenseModal(true)
+  }
+
+  const handleDeleteExpense = async (messageId: string, expenseId: string) => {
+    if (!currentUserId) return
+    const supabase = createClient()
+    // Delete in order: shares → expense → message
+    await supabase.from('expense_shares').delete().eq('expense_id', expenseId)
+    await supabase.from('expenses').delete().eq('id', expenseId)
+    const { error } = await supabase.from('messages').delete().eq('id', messageId)
+    if (error) { toast.error('Failed to delete expense'); return }
+    setMessages(prev => prev.filter(m => m.id !== messageId))
+    toast.success('Expense deleted')
+  }
+
+
   const handleAddExpense = async () => {
     const amount = parseFloat(expenseAmount)
     if (!expenseDesc.trim() || isNaN(amount) || amount <= 0 || !expensePaidBy || !currentUserId || involvedMembers.length === 0) return
     setSavingExpense(true)
     const supabase = createClient()
-
-    // Split amount only among selected members
     const splitAmount = amount / involvedMembers.length
+    const paidByName = profiles[expensePaidBy]?.name ?? 'Someone'
 
-    const { data: expense, error: expenseError } = await supabase
-      .from('expenses')
-      .insert({ group_id: groupId, paid_by: expensePaidBy, description: expenseDesc.trim(), total_amount: amount, category: expenseCategory })
-      .select()
-      .single()
+    if (editingExpense) {
+      // ── UPDATE mode ──────────────────────────────────────────
+      await supabase.from('expenses').update({
+        description: expenseDesc.trim(), total_amount: amount,
+        paid_by: expensePaidBy, category: expenseCategory,
+      }).eq('id', editingExpense.expenseId)
 
-    if (expenseError || !expense) {
-      toast.error('Failed to save expense')
-      setSavingExpense(false)
-      return
+      // Re-create shares
+      await supabase.from('expense_shares').delete().eq('expense_id', editingExpense.expenseId)
+      await supabase.from('expense_shares').insert(
+        involvedMembers.map((uid) => ({ expense_id: editingExpense.expenseId, user_id: uid, amount: splitAmount }))
+      )
+
+      // Update message metadata so bubble reflects new values
+      const newMeta = { expense_id: editingExpense.expenseId, amount, description: expenseDesc.trim(), paid_by: expensePaidBy, paid_by_name: paidByName }
+      await supabase.from('messages').update({ metadata: newMeta }).eq('id', editingExpense.messageId)
+
+      // Optimistic local update
+      setMessages(prev => prev.map(m => m.id === editingExpense.messageId
+        ? { ...m, metadata: newMeta } : m))
+      toast.success('Expense updated!')
+      setEditingExpense(null)
+    } else {
+      // ── CREATE mode ──────────────────────────────────────────
+      const { data: expense, error: expenseError } = await supabase
+        .from('expenses')
+        .insert({ group_id: groupId, paid_by: expensePaidBy, description: expenseDesc.trim(), total_amount: amount, category: expenseCategory })
+        .select().single()
+
+      if (expenseError || !expense) {
+        toast.error('Failed to save expense')
+        setSavingExpense(false)
+        return
+      }
+
+      await supabase.from('expense_shares').insert(
+        involvedMembers.map((uid) => ({ expense_id: expense.id, user_id: uid, amount: splitAmount }))
+      )
+
+      await supabase.from('messages').insert({
+        group_id: groupId, sender_id: currentUserId, type: 'expense',
+        content: `${expenseDesc.trim()} — $${amount.toFixed(2)}`,
+        metadata: { expense_id: expense.id, amount, description: expenseDesc.trim(), paid_by: expensePaidBy, paid_by_name: paidByName },
+      })
+
+      toast.success('Expense added!')
+      pushNotify(`New expense in ${group?.name || 'your group'}`, `${paidByName} added ${expenseDesc.trim()} — $${amount.toFixed(2)}`, 'expense')
     }
 
-    await supabase.from('expense_shares').insert(
-      involvedMembers.map((uid) => ({ expense_id: expense.id, user_id: uid, amount: splitAmount }))
-    )
-
-    const paidByName = profiles[expensePaidBy]?.name ?? 'Someone'
-    await supabase.from('messages').insert({
-      group_id: groupId,
-      sender_id: currentUserId,
-      type: 'expense',
-      content: `${expenseDesc.trim()} — $${amount.toFixed(2)}`,
-      metadata: { expense_id: expense.id, amount, description: expenseDesc.trim(), paid_by: expensePaidBy, paid_by_name: paidByName },
-    })
-
-    toast.success('Expense added!')
-    const paidName = profiles[expensePaidBy]?.name || 'Someone'
-    pushNotify(`New expense in ${group?.name || 'your group'}`, `${paidName} added ${expenseDesc.trim()} — $${parseFloat(expenseAmount).toFixed(2)}`, 'expense')
     setExpenseDesc('')
     setExpenseCategory('other')
     setExpenseAmount('')
@@ -496,7 +540,7 @@ export default function GroupFeedPage() {
     const showAvatar = !isMine && isLastInBlock
     const showTime = isLastInBlock
 
-    if (msg.type === 'expense') return <div key={msg.id}><ExpenseBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} /></div>
+    if (msg.type === 'expense') return <div key={msg.id}><ExpenseBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} onEdit={handleEditExpense} onDelete={handleDeleteExpense} /></div>
     if (msg.type === 'settlement') return <div key={msg.id}><SettlementBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} currentUserId={currentUserId} /></div>
 
     if (msg.type === 'receipt_pending') {
@@ -747,8 +791,8 @@ export default function GroupFeedPage() {
         <div className="absolute inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && setShowExpenseModal(false)}>
           <div className="w-full max-w-sm bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl anim-scale-in">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add Expense</h3>
-              <button onClick={() => setShowExpenseModal(false)} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center haptic hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingExpense ? 'Edit Expense' : 'Add Expense'}</h3>
+              <button onClick={() => { setShowExpenseModal(false); setEditingExpense(null); setExpenseDesc(''); setExpenseAmount(''); setExpensePaidBy(''); setExpenseCategory('other') }} className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center haptic hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors">
                 <X size={16} className="text-gray-500" />
               </button>
             </div>
@@ -870,7 +914,7 @@ export default function GroupFeedPage() {
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                     Saving…
                   </span>
-                ) : 'Add Expense'}
+                ) : editingExpense ? 'Save Changes' : 'Add Expense'}
               </button>
             </div>
           </div>

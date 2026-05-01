@@ -8,12 +8,32 @@ import { Group } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import Logo from '@/components/ui/Logo'
 import { formatDate } from '@/lib/utils'
-import { Plus } from 'lucide-react'
+import { Plus, Hash } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function GroupsPage() {
   const router = useRouter()
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
+  const [showJoinModal, setShowJoinModal] = useState(false)
+  const [joinCode, setJoinCode] = useState('')
+  const [joining, setJoining] = useState(false)
+
+  const handleJoin = async () => {
+    const code = joinCode.trim().toUpperCase()
+    if (!code) return
+    setJoining(true)
+    try {
+      const res = await fetch(`/join/${code}`, { method: 'GET', redirect: 'follow' })
+      // Just navigate — the join page handles the logic
+      router.push(`/join/${code}`)
+      setShowJoinModal(false)
+      setJoinCode('')
+    } catch {
+      toast.error('Invalid invite code')
+    }
+    setJoining(false)
+  }
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -47,12 +67,20 @@ export default function GroupsPage() {
             <Logo size={36} />
             <span className="text-[20px] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300 tracking-tight">GroupTab</span>
           </div>
-          <Link
-            href="/groups/new"
-            className="anim-scale-in w-10 h-10 bg-gradient-to-tr from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 rounded-full flex items-center justify-center haptic shadow-lg shadow-emerald-500/30 transition-all"
-          >
-            <Plus size={22} className="text-white drop-shadow-sm" />
-          </Link>
+          <div className="flex items-center gap-2 anim-scale-in">
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="w-10 h-10 bg-white/80 dark:bg-neutral-800/80 border border-gray-200/50 dark:border-neutral-700/50 rounded-full flex items-center justify-center haptic shadow-sm hover:bg-white dark:hover:bg-neutral-800 transition-all"
+            >
+              <Hash size={18} className="text-emerald-600 dark:text-emerald-400" />
+            </button>
+            <Link
+              href="/groups/new"
+              className="w-10 h-10 bg-gradient-to-tr from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 rounded-full flex items-center justify-center haptic shadow-lg shadow-emerald-500/30 transition-all"
+            >
+              <Plus size={22} className="text-white drop-shadow-sm" />
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -124,6 +152,45 @@ export default function GroupsPage() {
           </div>
         )}
       </div>
+
+      {/* Join by Code Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center pb-[calc(2rem+env(safe-area-inset-bottom,0px))] px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowJoinModal(false)} />
+          <div className="relative w-full max-w-[420px] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-neutral-800/50 p-6 space-y-4">
+            <div className="absolute top-[-20%] left-[-5%] w-[140px] h-[140px] bg-emerald-400/15 rounded-full blur-[40px] pointer-events-none" />
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                <Hash size={20} className="text-emerald-500" />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-black text-gray-900 dark:text-white">Join a group</h3>
+                <p className="text-[13px] text-gray-500 dark:text-gray-400">Enter the invite code shared by your friend</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+              placeholder="e.g. ABC123"
+              maxLength={10}
+              autoFocus
+              className="w-full px-4 py-3.5 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white text-[20px] font-black tracking-[0.3em] text-center uppercase focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowJoinModal(false)} className="flex-1 py-3.5 rounded-2xl bg-gray-100 dark:bg-neutral-800 text-[15px] font-bold text-gray-700 dark:text-gray-300 haptic">Cancel</button>
+              <button
+                onClick={handleJoin}
+                disabled={joining || !joinCode.trim()}
+                className="flex-1 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-[15px] font-bold haptic shadow-sm shadow-emerald-500/20 disabled:opacity-50 transition-colors"
+              >
+                {joining ? 'Joining…' : 'Join'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
