@@ -14,6 +14,7 @@ import Avatar from '@/components/ui/Avatar'
 import toast from 'react-hot-toast'
 import { Send, Plus, Camera, AtSign, ImageIcon, Hand } from 'lucide-react'
 import { useGroupChat } from '@/hooks/useGroupChat'
+import { useGroupBalances } from '@/hooks/useGroupBalances'
 import { useExpense } from '@/hooks/useExpense'
 import { pushGroupNotify } from '@/lib/utils'
 
@@ -36,6 +37,8 @@ export default function GroupFeedPage() {
     bottomRef, scrollAreaRef,
     loadMoreMessages, sendMessage, sendImage,
   } = useGroupChat(groupId)
+
+  const { debts, pendingSettlements } = useGroupBalances(groupId)
 
   const {
     showModal, editingExpense,
@@ -157,7 +160,16 @@ export default function GroupFeedPage() {
     if (msg.type === 'expense') {
       const meta = msg.metadata as any
       const paidByUser = meta?.paid_by
-      const isSettled = !currentUserId || !paidByUser || currentUserId === paidByUser || settledPairs.has(`${currentUserId}-${paidByUser}`)
+      let isSettled = !currentUserId || !paidByUser || currentUserId === paidByUser
+      if (!isSettled) {
+        const debt = debts.find(d => d.from === currentUserId && d.to === paidByUser)
+        const pendingAmount = pendingSettlements
+          .filter(s => s.from_user === currentUserId && s.to_user === paidByUser)
+          .reduce((sum, s) => sum + s.amount, 0)
+        const remainingDebt = (debt?.amount ?? 0) - pendingAmount
+        isSettled = remainingDebt <= 0
+      }
+
       return <div key={msg.id}><ExpenseBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} onEdit={openEdit} onDelete={handleDelete} currentUserId={currentUserId} groupId={groupId} isSettled={isSettled} /></div>
     }
     if (msg.type === 'settlement') return <div key={msg.id}><SettlementBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} currentUserId={currentUserId} /></div>
