@@ -60,7 +60,8 @@ export function useSettlement({
 
       if (existingPending.length > 0) {
         for (const s of existingPending) {
-          await supabase.from('settlements').update({ status: 'completed' }).eq('id', s.id)
+          const { error } = await supabase.from('settlements').update({ status: 'completed' }).eq('id', s.id)
+          if (error) { toast.error('Failed to confirm: ' + error.message); setSettling(null); return }
           await supabase.from('messages')
             .update({
               metadata: { settlement_id: s.id, amount: s.amount, from_user: s.from_user, from_name: fromProfile?.name ?? '', to_user: s.to_user, to_name: toProfile?.name ?? '', status: 'completed' },
