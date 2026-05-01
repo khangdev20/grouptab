@@ -133,6 +133,21 @@ export default function GroupSettingsPage() {
     router.push('/groups')
   }
 
+  const handleDeleteGroup = async () => {
+    if (!currentUserId) return
+    setLeavingGroup(true)
+    setConfirmAction(null)
+    const supabase = createClient()
+    const { error } = await supabase.from('groups').delete().eq('id', groupId)
+    if (error) {
+      toast.error('Failed to delete group')
+      setLeavingGroup(false)
+      return
+    }
+    toast.success('Group dissolved')
+    router.push('/groups')
+  }
+
   const togglePush = async () => {
     setPushLoading(true)
     if (subscribed) {
@@ -388,21 +403,9 @@ export default function GroupSettingsPage() {
 
         {/* Leave / Danger Zone */}
         <div className="pt-2 pb-4">
-          <div className="glass-panel rounded-3xl overflow-hidden">
-            {members.length === 1 ? (
-              <button
-                onClick={() => setConfirmAction('delete')}
-                className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors"
-              >
-                <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
-                  <Trash2 size={18} className="text-red-500" />
-                </div>
-                <div className="flex-1 text-left">
-                  <span className="text-[15px] font-bold block">Delete group</span>
-                  <span className="text-[12px] text-red-400">You are the only member</span>
-                </div>
-              </button>
-            ) : (
+          <div className="glass-panel rounded-3xl overflow-hidden divide-y divide-gray-100 dark:divide-neutral-800">
+            {/* Leave group — always shown when there are other members */}
+            {members.length > 1 && (
               <button
                 onClick={() => setConfirmAction('leave')}
                 disabled={leavingGroup}
@@ -418,6 +421,23 @@ export default function GroupSettingsPage() {
                   {members.find(m => m.profile.id === currentUserId)?.role === 'admin' && members.length > 1 && (
                     <span className="text-[12px] text-red-400">Admin will be transferred</span>
                   )}
+                </div>
+              </button>
+            )}
+
+            {/* Delete group — only for admins */}
+            {members.find(m => m.profile.id === currentUserId)?.role === 'admin' && (
+              <button
+                onClick={() => setConfirmAction('delete')}
+                disabled={leavingGroup}
+                className="w-full flex items-center gap-4 px-5 py-4 text-red-500 haptic hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-50"
+              >
+                <div className="w-11 h-11 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                  <Trash2 size={18} className="text-red-500" />
+                </div>
+                <div className="flex-1 text-left">
+                  <span className="text-[15px] font-bold block">Delete group</span>
+                  <span className="text-[12px] text-red-400">Permanently dissolve group &amp; all data</span>
                 </div>
               </button>
             )}
@@ -464,7 +484,7 @@ export default function GroupSettingsPage() {
                 Cancel
               </button>
               <button
-                onClick={confirmAction === 'delete' ? handleLeave : handleLeave}
+                onClick={confirmAction === 'delete' ? handleDeleteGroup : handleLeave}
                 disabled={leavingGroup}
                 className="flex-1 py-3.5 rounded-2xl bg-red-500 hover:bg-red-600 text-white text-[15px] font-bold haptic shadow-sm shadow-red-500/20 disabled:opacity-50 transition-colors"
               >
