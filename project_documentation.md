@@ -1,5 +1,5 @@
 # GroupTab — Project Documentation
-> Updated: 2026-05-01 (Session 2)
+> Updated: 2026-05-01 (Session 3)
 
 ---
 
@@ -107,7 +107,7 @@ lib/
 - [x] Auth callback handling
 
 ### Groups
-- [x] Create group (name, description, avatar)
+- [x] Create group via unified bottom-sheet modal (removed separate routing)
 - [x] Group list sorted by **last message date** with message preview
 - [x] Join group via invite link (`/join/{code}`)
 - [x] Join group via code entry (modal with # icon)
@@ -140,8 +140,8 @@ lib/
 - [x] Net balance calculation (minimum cash flow algorithm)
 - [x] Real-time sync via Supabase subscriptions (settlements + expense_shares)
 - [x] Refetch on visibility change
-- [x] Mark Paid → creates pending settlement
-- [x] Confirm Received → updates existing pending to completed
+- [x] Mark Paid → creates pending settlement (UI awaits realtime sync to prevent flashing)
+- [x] Confirm Received → updates existing pending to completed (UI awaits realtime sync)
 - [x] Pending confirmation notice shown inline
 - [x] "Pay Now" button on ExpenseBubble → navigates to balances page
 - [x] **Debt Breakdown** — expandable per-expense list explaining why a debt exists
@@ -180,6 +180,11 @@ lib/
 ### Statistics
 - [x] Personal expense stats by category (week/month/year filter)
 - [x] Breakdown with icons per category
+
+### UX & Performance Polish
+- [x] Removed Next.js global `loading.tsx` spinners to prevent conflict with built-in component skeleton loaders
+- [x] SettlementBubble `Confirm Payment` state perfectly syncs with real-time metadata to prevent double confirmations
+- [x] DebtCards await full Realtime calculation batching before updating to eliminate the "flashing unpaid debt" bug
 
 ---
 
