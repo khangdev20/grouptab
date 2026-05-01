@@ -27,6 +27,7 @@ export interface ExpenseMeta {
   amount: number
   paidBy: string
   category?: string
+  involvedMembers?: string[]
 }
 
 export default function ExpenseBubble({

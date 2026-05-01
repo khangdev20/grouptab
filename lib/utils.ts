@@ -159,3 +159,61 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onerror = reject
   })
 }
+
+/**
+ * Send a push notification to all group members (best-effort).
+ */
+export async function pushGroupNotify(
+  groupId: string,
+  title: string,
+  body: string,
+  tag?: string,
+) {
+  try {
+    await fetch('/api/push/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId, title, body, url: `/groups/${groupId}`, tag }),
+    })
+  } catch { /* best-effort */ }
+}
+
+export type RemindEntry = { count: number; windowStart: number }
+export type RemindMap = Record<string, RemindEntry>
+
+/**
+ * Rate-limit helper for remind-debtor flow.
+ * Returns { canRemind, remaining } based on localStorage-persisted remindMap.
+ */
+export function getRateLimitState(
+  map: RemindMap,
+  key: string,
+  limit: number,
+  windowMs: number,
+): { canRemind: boolean; remaining: number; count: number } {
+  const entry = map[key]
+  if (!entry) return { count: 0, canRemind: true, remaining: limit }
+  const elapsed = Date.now() - entry.windowStart
+  if (elapsed >= windowMs) return { count: 0, canRemind: true, remaining: limit }
+  return {
+    count: entry.count,
+    canRemind: entry.count < limit,
+    remaining: limit - entry.count,
+  }
+}
+
+/**
+ * Increment the rate-limit counter in a RemindMap, resetting window if needed.
+ */
+export function incrementRateLimit(
+  map: RemindMap,
+  key: string,
+  windowMs: number,
+): RemindMap {
+  const entry = map[key]
+  const now = Date.now()
+  if (!entry || now - entry.windowStart >= windowMs) {
+    return { ...map, [key]: { count: 1, windowStart: now } }
+  }
+  return { ...map, [key]: { count: entry.count + 1, windowStart: entry.windowStart } }
+}
