@@ -51,7 +51,7 @@ export function useGroupChat(groupId: string) {
         })
         setTimeout(() => scrollToBottom(true), 50)
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `group_id=eq.${groupId}` }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
         setMessages((prev) => prev.map((m) => m.id === payload.new.id ? payload.new as Message : m))
       })
       .subscribe()

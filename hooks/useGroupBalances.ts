@@ -68,7 +68,7 @@ export function useGroupBalances(groupId: string) {
     // ── Realtime subscriptions ───────────────────────────────────────────
     const channel = supabase
       .channel(`balances-${groupId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `group_id=eq.${groupId}` }, async () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements' }, async () => {
         const { data } = await fetchSettlements(supabase, groupId)
         if (data) {
           allSettlements = data
