@@ -35,6 +35,7 @@ export default function GroupFeedPage() {
   const [showMentions, setShowMentions] = useState(false)
   const [mentionIndex, setMentionIndex] = useState(0)
   const [sendingImage, setSendingImage] = useState(false)
+  const [settledPairs, setSettledPairs] = useState<Set<string>>(new Set())
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -112,6 +113,16 @@ export default function GroupFeedPage() {
         const profileMap: Record<string, Profile> = {}
         members.forEach((m: any) => { if (m.profiles) profileMap[m.user_id] = m.profiles })
         setProfiles(profileMap)
+      }
+
+      // Load completed settlements to know which debts are settled
+      const { data: completedSettlements } = await supabase
+        .from('settlements')
+        .select('from_user, to_user')
+        .eq('group_id', groupId)
+        .eq('status', 'completed')
+      if (completedSettlements) {
+        setSettledPairs(new Set(completedSettlements.map((s: any) => `${s.from_user}-${s.to_user}`)))
       }
 
       await fetchMessages()
@@ -540,7 +551,14 @@ export default function GroupFeedPage() {
     const showAvatar = !isMine && isLastInBlock
     const showTime = isLastInBlock
 
-    if (msg.type === 'expense') return <div key={msg.id}><ExpenseBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} onEdit={handleEditExpense} onDelete={handleDeleteExpense} /></div>
+    if (msg.type === 'expense') {
+      const meta = msg.metadata as any
+      const paidBy = meta?.paid_by
+      // isSettled: current user's debt to this payer has been fully covered
+      const isSettled = !currentUserId || !paidBy || currentUserId === paidBy
+        || settledPairs.has(`${currentUserId}-${paidBy}`)
+      return <div key={msg.id}><ExpenseBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} onEdit={handleEditExpense} onDelete={handleDeleteExpense} currentUserId={currentUserId} groupId={groupId} isSettled={isSettled} /></div>
+    }
     if (msg.type === 'settlement') return <div key={msg.id}><SettlementBubble message={msg} sender={sender} isMine={isMine} showAvatar={showAvatar} showName={showName} currentUserId={currentUserId} /></div>
 
     if (msg.type === 'receipt_pending') {

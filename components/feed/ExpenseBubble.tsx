@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Message, Profile } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { Receipt, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Receipt, MoreHorizontal, Pencil, Trash2, ArrowRight } from 'lucide-react'
 import Avatar from '@/components/ui/Avatar'
 
 interface ExpenseBubbleProps {
@@ -12,6 +13,9 @@ interface ExpenseBubbleProps {
   isMine: boolean
   showAvatar: boolean
   showName?: boolean
+  currentUserId?: string | null
+  groupId?: string
+  isSettled?: boolean
   onEdit?: (meta: ExpenseMeta) => void
   onDelete?: (messageId: string, expenseId: string) => void
 }
@@ -27,6 +31,7 @@ export interface ExpenseMeta {
 
 export default function ExpenseBubble({
   message, sender, isMine, showAvatar, showName,
+  currentUserId, groupId, isSettled,
   onEdit, onDelete
 }: ExpenseBubbleProps) {
   const meta = message.metadata as any
@@ -35,6 +40,10 @@ export default function ExpenseBubble({
   const paidBy = meta?.paid_by_name ?? sender?.name ?? 'Someone'
   const [showMenu, setShowMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+
+  // Show Pay Now: viewer is not the payer and debt isn't settled
+  const showPayNow = currentUserId && meta?.paid_by && currentUserId !== meta.paid_by && !isSettled
 
   const expenseMeta: ExpenseMeta = {
     messageId: message.id,
@@ -109,6 +118,16 @@ export default function ExpenseBubble({
         </p>
         <p className={`text-[10px] mt-0.5 ${mine ? 'text-emerald-800/40 dark:text-emerald-200/30' : 'text-gray-400 dark:text-gray-500'}`}>{formatDate(message.created_at)}</p>
       </div>
+
+      {/* Pay Now button — shown for non-payers with outstanding debt */}
+      {showPayNow && !mine && (
+        <button
+          onClick={() => groupId && router.push(`/groups/${groupId}/balances`)}
+          className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-[12px] font-bold haptic transition-colors shadow-sm shadow-emerald-500/25 relative z-10"
+        >
+          Pay now <ArrowRight size={12} />
+        </button>
+      )}
     </div>
   )
 
