@@ -160,6 +160,109 @@ export function fileToBase64(file: File): Promise<string> {
   })
 }
 
+// ── Debt Breakdown ────────────────────────────────────────────────────────────
+
+export interface DebtBreakdownItem {
+  expenseId: string
+  description: string
+  date: string          // ISO string
+  category: string
+  totalAmount: number
+  shareAmount: number   // absolute value — how much this expense contributes to the debt
+  /** 'owed' = creditor paid, debtor owes this amount to creditor
+   *  'offset' = debtor paid, creditor owes debtor (reduces the net debt) */
+  direction: 'owed' | 'offset'
+  paidBy: string        // user id of payer
+}
+
+/**
+ * Given a list of enriched expense shares (with joined `expenses` data including
+ * description, created_at, category), return the individual expense breakdown
+ * that explains why `debtorId` owes `creditorId` money.
+ *
+ * Works on raw/unsimplified debts — shows all direct expense relationships
+ * between the two people regardless of the simplification algorithm.
+ */
+export function getDebtBreakdown(
+  debtorId: string,
+  creditorId: string,
+  shares: Array<{
+    user_id: string
+    amount: number
+    expense_id: string
+    expenses: {
+      id: string
+      group_id: string
+      paid_by: string
+      total_amount: number
+      description: string
+      created_at: string
+      category: string
+    }
+  }>,
+): DebtBreakdownItem[] {
+  // Group shares by expense_id
+  const expenseMap = new Map<string, {
+    exp: typeof shares[number]['expenses']
+    sharerIds: Set<string>
+    shareAmounts: Map<string, number>
+  }>()
+
+  for (const s of shares) {
+    const exp = s.expenses
+    if (!exp) continue
+    if (!expenseMap.has(s.expense_id)) {
+      expenseMap.set(s.expense_id, { exp, sharerIds: new Set(), shareAmounts: new Map() })
+    }
+    const entry = expenseMap.get(s.expense_id)!
+    entry.sharerIds.add(s.user_id)
+    entry.shareAmounts.set(s.user_id, s.amount)
+  }
+
+  const items: DebtBreakdownItem[] = []
+
+  for (const [expId, { exp, sharerIds, shareAmounts }] of expenseMap) {
+    const paidBy = exp.paid_by
+
+    // Creditor paid → debtor has a share → debtor owes creditor
+    if (paidBy === creditorId && sharerIds.has(debtorId)) {
+      const shareAmt = shareAmounts.get(debtorId) ?? 0
+      if (shareAmt > 0.005) {
+        items.push({
+          expenseId: expId,
+          description: exp.description,
+          date: exp.created_at,
+          category: exp.category ?? 'other',
+          totalAmount: exp.total_amount,
+          shareAmount: shareAmt,
+          direction: 'owed',
+          paidBy,
+        })
+      }
+    }
+
+    // Debtor paid → creditor has a share → this reduces debtor's net debt
+    if (paidBy === debtorId && sharerIds.has(creditorId)) {
+      const shareAmt = shareAmounts.get(creditorId) ?? 0
+      if (shareAmt > 0.005) {
+        items.push({
+          expenseId: expId,
+          description: exp.description,
+          date: exp.created_at,
+          category: exp.category ?? 'other',
+          totalAmount: exp.total_amount,
+          shareAmount: shareAmt,
+          direction: 'offset',
+          paidBy,
+        })
+      }
+    }
+  }
+
+  // Sort chronologically
+  return items.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+}
+
 /**
  * Send a push notification to all group members (best-effort).
  */

@@ -53,7 +53,7 @@ export async function insertMessage(supabase: SupabaseClient, payload: {
 export async function fetchExpenseShares(supabase: SupabaseClient, groupId: string) {
   return supabase
     .from('expense_shares')
-    .select('*, expenses!inner(group_id, paid_by, total_amount)')
+    .select('*, expenses!inner(id, group_id, paid_by, total_amount, description, created_at, category)')
     .eq('expenses.group_id', groupId)
 }
 

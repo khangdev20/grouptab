@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useGroupBalances } from '@/hooks/useGroupBalances'
 import { useSettlement } from '@/hooks/useSettlement'
 import { useRemindDebtor } from '@/hooks/useRemindDebtor'
@@ -13,25 +13,25 @@ import Link from 'next/link'
 
 export default function GroupBalancesPage() {
   const { groupId } = useParams() as { groupId: string }
-  const router = useRouter()
 
   const {
     balances, debts, profiles, currentUserId, loading,
-    pendingSettlements, setPendingSettlements,
+    pendingSettlements, setPendingSettlements, rawShares,
   } = useGroupBalances(groupId)
 
   const { settling, handleSettle } = useSettlement({
     groupId, profiles, pendingSettlements, currentUserId,
     setPendingSettlements,
-    onDone: () => router.push(`/groups/${groupId}`),
+    // Stay on balances page after settling — no redirect
   })
 
   const { getRemindState, handleRemind } = useRemindDebtor(groupId, profiles)
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full items-center justify-center gap-3">
-        {[1,2,3].map(i => <div key={i} className="h-20 w-full max-w-sm rounded-3xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />)}
+      <div className="flex flex-col h-full px-4 pt-[calc(1rem+env(safe-area-inset-top))] gap-4">
+        <div className="h-8 w-24 rounded-xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />
+        {[1,2,3].map(i => <div key={i} className="h-28 w-full rounded-3xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />)}
       </div>
     )
   }
@@ -95,7 +95,7 @@ export default function GroupBalancesPage() {
           </div>
         </div>
 
-        {/* Settled up */}
+        {/* Settle Up */}
         {isSettledUp ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <PartyPopper size={40} className="text-emerald-500 mb-3 opacity-70" />
@@ -104,7 +104,7 @@ export default function GroupBalancesPage() {
           </div>
         ) : (
           <div>
-            <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1 mt-8">Settle Up</h2>
+            <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1 mt-2">Settle Up</h2>
             <div className="space-y-3">
               {debts.map((debt) => {
                 const key = `${debt.from}-${debt.to}`
@@ -130,6 +130,7 @@ export default function GroupBalancesPage() {
                     currentUserId={currentUserId}
                     pendingAmount={pendingAmount} remainingDebt={remainingDebt}
                     settling={settling}
+                    rawShares={rawShares}
                     onMarkPaid={(d, amt) => handleSettle(d, amt)}
                     onConfirm={(d, amt) => handleSettle(d, amt)}
                     onRemind={handleRemind}
