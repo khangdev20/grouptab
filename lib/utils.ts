@@ -96,10 +96,10 @@ export function calculateBalances(
 
   // Settlements adjust balances
   for (const s of settlements) {
-    const fromCurrent = balanceMap.get(s.from_user_id) ?? 0
-    const toCurrent = balanceMap.get(s.to_user_id) ?? 0
-    balanceMap.set(s.from_user_id, fromCurrent + s.amount)
-    balanceMap.set(s.to_user_id, toCurrent - s.amount)
+    const fromCurrent = balanceMap.get(s.from_user) ?? 0
+    const toCurrent = balanceMap.get(s.to_user) ?? 0
+    balanceMap.set(s.from_user, fromCurrent + s.amount)
+    balanceMap.set(s.to_user, toCurrent - s.amount)
   }
 
   const result: Balance[] = []

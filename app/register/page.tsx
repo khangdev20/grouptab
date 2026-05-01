@@ -35,14 +35,12 @@ function RegisterInner() {
     }
 
     if (data.user) {
-      const { error: profileError } = await supabase
+      // Trigger handle_new_user may have already created the profile.
+      // Use upsert to set the name the user provided.
+      await supabase
         .from('profiles')
-        .insert({ id: data.user.id, name, email })
-      if (profileError) {
-        toast.error('Failed to create profile')
-        setLoading(false)
-        return
-      }
+        .upsert({ id: data.user.id, name }, { onConflict: 'id' })
+
       toast.success('Account created!')
       router.push(redirectTo)
       router.refresh()
