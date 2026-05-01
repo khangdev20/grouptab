@@ -93,7 +93,7 @@ export default function DebtCard({
 
         {/* ── Action buttons ─────────────────────────────────────────────── */}
         <div className="flex gap-2 mt-3">
-          {fromIsMe && (
+          {fromIsMe && remainingDebt > 0 && (
             <button
               onClick={() => onMarkPaid(debt, remainingDebt)}
               disabled={settling === key}
@@ -106,26 +106,28 @@ export default function DebtCard({
 
           {toIsMe && (
             <>
+              {remainingDebt > 0 && (
+                <button
+                  onClick={() => onRemind(debt)}
+                  disabled={!canRemind}
+                  title={canRemind ? `Remind ${from?.name} (${remaining} left)` : 'Reminder limit reached for 48h'}
+                  className={`py-2.5 px-3.5 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${
+                    canRemind
+                      ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100'
+                      : 'bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <Bell size={15} />
+                  <span>{remaining}/2</span>
+                </button>
+              )}
               <button
-                onClick={() => onRemind(debt)}
-                disabled={!canRemind}
-                title={canRemind ? `Remind ${from?.name} (${remaining} left)` : 'Reminder limit reached for 48h'}
-                className={`py-2.5 px-3.5 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${
-                  canRemind
-                    ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100'
-                    : 'bg-gray-100 dark:bg-neutral-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <Bell size={15} />
-                <span>{remaining}/2</span>
-              </button>
-              <button
-                onClick={() => onConfirm(debt, remainingDebt)}
+                onClick={() => onConfirm(debt, remainingDebt <= 0 ? pendingAmount : remainingDebt)}
                 disabled={settling === key}
                 className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <CheckCircle2 size={16} />
-                {settling === key ? '...' : 'Confirm Received'}
+                {settling === key ? '...' : (remainingDebt <= 0 ? 'Confirm Payment' : 'Confirm Received')}
               </button>
             </>
           )}

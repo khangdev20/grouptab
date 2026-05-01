@@ -5,7 +5,6 @@ import { useGroupBalances } from '@/hooks/useGroupBalances'
 import { useSettlement } from '@/hooks/useSettlement'
 import { useRemindDebtor } from '@/hooks/useRemindDebtor'
 import DebtCard from '@/components/balances/DebtCard'
-import PendingDebtCard from '@/components/balances/PendingDebtCard'
 import Avatar from '@/components/ui/Avatar'
 import { ArrowLeft, ArrowRight, PartyPopper } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
@@ -112,18 +111,6 @@ export default function GroupBalancesPage() {
                   .filter(s => s.from_user === debt.from && s.to_user === debt.to)
                   .reduce((sum, s) => sum + s.amount, 0)
                 const remainingDebt = debt.amount - pendingAmount
-
-                if (remainingDebt <= 0 && pendingAmount > 0) {
-                  return (
-                    <PendingDebtCard
-                      key={key} debt={debt} profiles={profiles}
-                      currentUserId={currentUserId}
-                      pendingAmount={pendingAmount} settling={settling}
-                      onConfirm={(d, amt) => handleSettle(d, amt)}
-                    />
-                  )
-                }
-
                 return (
                   <DebtCard
                     key={key} debt={debt} profiles={profiles}
