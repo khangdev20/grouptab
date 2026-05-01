@@ -39,6 +39,9 @@ export function useSettlement({
 
       if (error || !settlement) { toast.error('Failed to record settlement'); setSettling(null); return }
 
+      // Optimistically add to pending settlements to instantly hide the Mark Paid button
+      setPendingSettlements(prev => [...prev, settlement])
+
       await supabase.from('messages').insert({
         group_id: groupId, sender_id: currentUserId, type: 'settlement',
         content: `${fromProfile?.name ?? 'Someone'} marked ${formatCurrency(amount)} as paid. Waiting for confirmation.`,
