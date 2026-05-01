@@ -66,7 +66,6 @@ export function useSettlement({
             .eq('type', 'settlement')
             .contains('metadata', { settlement_id: s.id })
         }
-        setPendingSettlements(prev => prev.filter(s => !(s.from_user === debt.from && s.to_user === debt.to)))
         toast.success('Payment confirmed!')
       } else {
         const { data: settlement, error } = await supabase
@@ -85,6 +84,8 @@ export function useSettlement({
       pushGroupNotify(groupId, 'Payment Confirmed', `Your payment of ${formatCurrency(amount)} was confirmed.`, 'settlement')
     }
 
+    // Wait slightly for Supabase realtime to update balances/debts before unlocking button
+    await new Promise(r => setTimeout(r, 800))
     setSettling(null)
     onDone?.()
   }, [currentUserId, groupId, profiles, pendingSettlements, setPendingSettlements, onDone])
