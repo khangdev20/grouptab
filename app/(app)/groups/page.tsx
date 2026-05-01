@@ -8,7 +8,7 @@ import { Group } from '@/lib/types'
 import Avatar from '@/components/ui/Avatar'
 import Logo from '@/components/ui/Logo'
 import { formatDate } from '@/lib/utils'
-import { Plus, Hash } from 'lucide-react'
+import { Plus, Hash, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface GroupWithActivity extends Group {
@@ -20,9 +20,17 @@ export default function GroupsPage() {
   const router = useRouter()
   const [groups, setGroups] = useState<GroupWithActivity[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Join Modal State
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [joining, setJoining] = useState(false)
+
+  // Create Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [createName, setCreateName] = useState('')
+  const [createDesc, setCreateDesc] = useState('')
+  const [creating, setCreating] = useState(false)
 
   const handleJoin = async () => {
     const code = joinCode.trim().toUpperCase()
@@ -36,6 +44,42 @@ export default function GroupsPage() {
       toast.error('Invalid invite code')
     }
     setJoining(false)
+  }
+
+  const handleCreate = async () => {
+    if (!createName.trim()) return
+    setCreating(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const groupId = crypto.randomUUID()
+      const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+      await supabase.from('profiles').upsert({ id: user.id, name: user.email?.split('@')[0] ?? 'User' }, { onConflict: 'id', ignoreDuplicates: true })
+
+      const { error } = await supabase
+        .from('groups')
+        .insert({ id: groupId, name: createName.trim(), description: createDesc.trim() || null, created_by: user.id, invite_code: inviteCode })
+
+      if (error) throw error
+
+      await supabase
+        .from('group_members')
+        .insert({ group_id: groupId, user_id: user.id, role: 'admin' })
+
+      toast.success('Group created!')
+      setShowCreateModal(false)
+      setCreateName('')
+      setCreateDesc('')
+      router.push(`/groups/${groupId}`)
+    } catch (error: any) {
+      console.log('Create group error:', error)
+      toast.error(error.message || error.code || 'Failed to create group')
+      setCreating(false)
+    }
   }
 
   useEffect(() => {
@@ -113,12 +157,12 @@ export default function GroupsPage() {
             >
               <Hash size={18} className="text-emerald-600 dark:text-emerald-400" />
             </button>
-            <Link
-              href="/groups/new"
+            <button
+              onClick={() => setShowCreateModal(true)}
               className="w-10 h-10 bg-gradient-to-tr from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 rounded-full flex items-center justify-center haptic shadow-lg shadow-emerald-500/30 transition-all"
             >
               <Plus size={22} className="text-white drop-shadow-sm" />
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -146,12 +190,12 @@ export default function GroupsPage() {
             <p className="text-[15px] text-gray-500 dark:text-gray-400 mb-8 font-medium max-w-[260px] leading-relaxed">
               Create a group to start tracking shared expenses with friends.
             </p>
-            <Link
-              href="/groups/new"
+            <button
+              onClick={() => setShowCreateModal(true)}
               className="px-7 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl text-[15px] font-bold haptic shadow-lg shadow-emerald-500/30 transition-all hover:scale-105"
             >
               Create your first group
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="space-y-3.5">
@@ -190,7 +234,7 @@ export default function GroupsPage() {
       {showJoinModal && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center pb-[calc(2rem+env(safe-area-inset-bottom,0px))] px-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowJoinModal(false)} />
-          <div className="relative w-full max-w-[420px] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-neutral-800/50 p-6 space-y-4">
+          <div className="relative w-full max-w-[420px] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-neutral-800/50 p-6 space-y-4 anim-slide-up">
             <div className="absolute top-[-20%] left-[-5%] w-[140px] h-[140px] bg-emerald-400/15 rounded-full blur-[40px] pointer-events-none" />
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
@@ -219,6 +263,55 @@ export default function GroupsPage() {
                 className="flex-1 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-[15px] font-bold haptic shadow-sm shadow-emerald-500/20 disabled:opacity-50 transition-colors"
               >
                 {joining ? 'Joining…' : 'Join'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Group Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center pb-[calc(2rem+env(safe-area-inset-bottom,0px))] px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCreateModal(false)} />
+          <div className="relative w-full max-w-[420px] bg-white/90 dark:bg-neutral-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-neutral-800/50 p-6 space-y-4 anim-slide-up">
+            <div className="absolute top-[-20%] left-[-5%] w-[140px] h-[140px] bg-teal-400/15 rounded-full blur-[40px] pointer-events-none" />
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center">
+                <Users size={20} className="text-teal-500" />
+              </div>
+              <div>
+                <h3 className="text-[18px] font-black text-gray-900 dark:text-white">Create a group</h3>
+                <p className="text-[13px] text-gray-500 dark:text-gray-400">Start tracking shared expenses</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder="Group name (e.g. Weekend Trip)"
+                autoFocus
+                className="w-full px-4 py-3.5 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white font-semibold focus:ring-2 focus:ring-teal-500 outline-none"
+              />
+              <input
+                type="text"
+                value={createDesc}
+                onChange={(e) => setCreateDesc(e.target.value)}
+                placeholder="Description (optional)"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                className="w-full px-4 py-3.5 rounded-2xl border-0 bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-teal-500 outline-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3.5 rounded-2xl bg-gray-100 dark:bg-neutral-800 text-[15px] font-bold text-gray-700 dark:text-gray-300 haptic">Cancel</button>
+              <button
+                onClick={handleCreate}
+                disabled={creating || !createName.trim()}
+                className="flex-1 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white text-[15px] font-bold haptic shadow-sm shadow-teal-500/20 disabled:opacity-50 transition-colors"
+              >
+                {creating ? 'Creating…' : 'Create'}
               </button>
             </div>
           </div>
