@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Message, Profile } from '@/lib/types'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { CheckCircle2, Clock } from 'lucide-react'
@@ -26,6 +26,11 @@ export default function SettlementBubble({ message, sender, isMine, showAvatar, 
   // localStatus allows instant UI update without waiting for realtime
   const [localStatus, setLocalStatus] = useState<string>(meta?.status ?? 'completed')
   const [confirming, setConfirming] = useState(false)
+  
+  useEffect(() => {
+    if (meta?.status) setLocalStatus(meta.status)
+  }, [meta?.status])
+
   const isPending = localStatus === 'pending'
   const canConfirm = isPending && currentUserId === toUser
 
