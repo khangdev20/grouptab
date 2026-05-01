@@ -11,9 +11,14 @@ import { formatDate } from '@/lib/utils'
 import { Plus, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+interface GroupWithActivity extends Group {
+  lastActivityAt: string
+  lastMessagePreview: string | null
+}
+
 export default function GroupsPage() {
   const router = useRouter()
-  const [groups, setGroups] = useState<Group[]>([])
+  const [groups, setGroups] = useState<GroupWithActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinCode, setJoinCode] = useState('')
@@ -24,8 +29,6 @@ export default function GroupsPage() {
     if (!code) return
     setJoining(true)
     try {
-      const res = await fetch(`/join/${code}`, { method: 'GET', redirect: 'follow' })
-      // Just navigate — the join page handles the logic
       router.push(`/join/${code}`)
       setShowJoinModal(false)
       setJoinCode('')
@@ -41,15 +44,52 @@ export default function GroupsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      const { data } = await supabase
+      // ── Batch: memberships + most recent message per group ────────────────
+      const { data: memberships } = await supabase
         .from('group_members')
-        .select('grp:groups(*)')
+        .select('group_id, joined_at, groups(*)')
         .eq('user_id', user.id)
-        .order('joined_at', { ascending: false })
 
-      if (data) {
-        setGroups(data.map((d: any) => d.grp).filter(Boolean))
+      if (!memberships?.length) { setLoading(false); return }
+
+      const groupIds = memberships.map((m: any) => m.group_id).filter(Boolean) as string[]
+
+      // Fetch latest message per group in one query — ordered DESC, then group client-side
+      const { data: recentMessages } = await supabase
+        .from('messages')
+        .select('group_id, content, type, created_at')
+        .in('group_id', groupIds)
+        .order('created_at', { ascending: false })
+        .limit(groupIds.length * 3) // rough cap; deduplicated below
+
+      // Build lastMessage map — first occurrence per group_id wins (newest)
+      const lastMsgMap = new Map<string, { preview: string; at: string }>()
+      for (const msg of recentMessages ?? []) {
+        if (lastMsgMap.has(msg.group_id)) continue
+        let preview = ''
+        if (msg.type === 'text') preview = msg.content ?? ''
+        else if (msg.type === 'expense') preview = '💸 New expense'
+        else if (msg.type === 'settlement') preview = '✅ Payment recorded'
+        else if (msg.type === 'image') preview = '📷 Photo'
+        else if (msg.type === 'receipt_pending') preview = '🧾 Receipt uploaded'
+        lastMsgMap.set(msg.group_id, { preview, at: msg.created_at })
       }
+
+      // Assemble enriched groups, sorted by most recent activity
+      const enriched: GroupWithActivity[] = (memberships as any[])
+        .map((m) => {
+          if (!m.groups) return null
+          const lastMsg = lastMsgMap.get(m.group_id)
+          return {
+            ...m.groups,
+            lastActivityAt: lastMsg?.at ?? m.joined_at,
+            lastMessagePreview: lastMsg?.preview ?? null,
+          }
+        })
+        .filter(Boolean)
+        .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())
+
+      setGroups(enriched as GroupWithActivity[])
       setLoading(false)
     }
     fetchGroups()
@@ -57,8 +97,7 @@ export default function GroupsPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-[-5%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+      <div className="absolute top-[-5%] right-[-10%] w-[350px] h-[350px] bg-emerald-400/10 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none" />
 
       {/* Header */}
       <div className="sticky top-0 z-20 bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl border-b border-gray-200/50 dark:border-neutral-800/50 px-5 pt-safe shadow-sm">
@@ -120,11 +159,11 @@ export default function GroupsPage() {
               <Link
                 key={group.id}
                 href={`/groups/${group.id}`}
-                className="anim-fade-up block glass-panel p-4 rounded-3xl hover:bg-white/90 dark:hover:bg-neutral-800/90 active:scale-[0.98] transition-all duration-200 hover:shadow-lg hover:shadow-emerald-900/5 dark:hover:shadow-black/20"
+                className="anim-fade-up block glass-panel p-4 rounded-3xl hover:bg-white/90 dark:hover:bg-neutral-800/90 active:scale-[0.98] transition-all duration-200 hover:shadow-lg"
                 style={{ animationDelay: `${idx * 40}ms` }}
               >
                 <div className="flex items-center gap-4">
-                  <div className="shadow-sm rounded-full bg-white dark:bg-neutral-800 p-0.5">
+                  <div className="shadow-sm rounded-full bg-white dark:bg-neutral-800 p-0.5 flex-shrink-0">
                     <Avatar name={group.name} imageUrl={group.avatar_url} size="lg" />
                   </div>
                   <div className="flex-1 min-w-0 py-1">
@@ -132,19 +171,13 @@ export default function GroupsPage() {
                       <span className="font-bold text-gray-900 dark:text-white text-[16px] truncate tracking-tight">
                         {group.name}
                       </span>
-                      <span className="text-[11px] font-semibold text-gray-400/80 dark:text-gray-500 uppercase tracking-wider ml-2 flex-shrink-0 bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full">
-                        {formatDate(group.created_at)}
+                      <span className="text-[11px] font-semibold text-gray-400/80 dark:text-gray-500 ml-2 flex-shrink-0">
+                        {formatDate(group.lastActivityAt)}
                       </span>
                     </div>
-                    {group.description ? (
-                      <p className="text-[14px] text-gray-500 dark:text-gray-400 truncate font-medium">
-                        {group.description}
-                      </p>
-                    ) : (
-                      <p className="text-[14px] text-gray-400 dark:text-gray-500 italic font-medium">
-                        No description
-                      </p>
-                    )}
+                    <p className="text-[14px] text-gray-500 dark:text-gray-400 truncate font-medium">
+                      {group.lastMessagePreview ?? group.description ?? <span className="italic">No messages yet</span>}
+                    </p>
                   </div>
                 </div>
               </Link>
