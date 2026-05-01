@@ -323,6 +323,13 @@ export default function GroupBalancesPage() {
                             <span className="font-bold">{toIsMe ? 'you' : to?.name}</span>
                           </p>
                           <p className="text-sm font-black text-emerald-500 mt-0.5">{formatCurrency(remainingDebt)}</p>
+                          {/* Show pending amount notice when mixed state */}
+                          {pendingAmount > 0 && (
+                            <p className="text-[11px] font-semibold text-amber-500 mt-0.5 flex items-center gap-1">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              {formatCurrency(pendingAmount)} pending confirmation
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2">
