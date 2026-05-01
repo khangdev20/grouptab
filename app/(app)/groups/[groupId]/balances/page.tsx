@@ -1,3 +1,4 @@
+// app/(app)/groups/[groupId]/balances/page.tsx
 'use client'
 
 import { useParams } from 'next/navigation'
@@ -15,13 +16,12 @@ export default function GroupBalancesPage() {
 
   const {
     balances, debts, profiles, currentUserId, loading,
-    pendingSettlements, setPendingSettlements, rawShares,
+    pendingSettlements, rawShares,
   } = useGroupBalances(groupId)
 
+  // Bỏ setPendingSettlements — hook không expose nữa
   const { settling, handleSettle } = useSettlement({
     groupId, profiles, pendingSettlements, currentUserId,
-    setPendingSettlements,
-    // Stay on balances page after settling — no redirect
   })
 
   const { getRemindState, handleRemind } = useRemindDebtor(groupId, profiles)
@@ -30,13 +30,33 @@ export default function GroupBalancesPage() {
     return (
       <div className="flex flex-col h-full px-4 pt-[calc(1rem+env(safe-area-inset-top))] gap-4">
         <div className="h-8 w-24 rounded-xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />
-        {[1,2,3].map(i => <div key={i} className="h-28 w-full rounded-3xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />)}
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-28 w-full rounded-3xl bg-gray-200/60 dark:bg-neutral-800/60 animate-pulse" />
+        ))}
       </div>
     )
   }
 
   const myBalance = balances.find(b => b.userId === currentUserId)
-  const isSettledUp = debts.length === 0 && pendingSettlements.length === 0
+
+  // Fix isSettledUp: nhóm settle khi không còn debt nào có remainingDebt > 0
+  // pendingSettlements vẫn tồn tại nhưng không block "settled up" nếu debt = 0
+  const debtCards = debts.map(debt => {
+    const pendingAmount = pendingSettlements
+      .filter(s => s.from_user === debt.from && s.to_user === debt.to)
+      .reduce((sum, s) => sum + s.amount, 0)
+    const remainingDebt = Math.max(0, Math.round((debt.amount - pendingAmount) * 100) / 100)
+    return { debt, pendingAmount, remainingDebt }
+  })
+
+  // Thêm pending settlements không có debt tương ứng
+  // (debt đã tối giản nhưng pending vẫn cần hiển thị để creditor confirm)
+  const debtKeys = new Set(debts.map(d => `${d.from}-${d.to}`))
+  const orphanPending = pendingSettlements.filter(
+    s => !debtKeys.has(`${s.from_user}-${s.to_user}`)
+  )
+
+  const isSettledUp = debtCards.every(c => c.remainingDebt === 0) && orphanPending.length === 0
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50 dark:bg-neutral-950 relative overflow-hidden pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
@@ -58,41 +78,58 @@ export default function GroupBalancesPage() {
         {/* My balance chip */}
         {myBalance && (
           <div className="glass-panel rounded-3xl p-4 flex items-center gap-3">
-            <Avatar name={profiles[currentUserId!]?.name ?? '?'} imageUrl={profiles[currentUserId!]?.avatar_url} size="md" className="shadow-md" />
+            <Avatar
+              name={profiles[currentUserId!]?.name ?? '?'}
+              imageUrl={profiles[currentUserId!]?.avatar_url}
+              size="md"
+              className="shadow-md"
+            />
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Your balance</p>
               <p className={`text-lg font-black ${myBalance.amount >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                {myBalance.amount >= 0 ? `+${formatCurrency(myBalance.amount)}` : formatCurrency(myBalance.amount)}
+                {myBalance.amount >= 0
+                  ? `+${formatCurrency(myBalance.amount)}`
+                  : formatCurrency(myBalance.amount)}
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {myBalance.amount > 0.01 ? 'You are owed money' : myBalance.amount < -0.01 ? 'You owe money' : 'All settled up!'}
+                {myBalance.amount > 0.01
+                  ? 'You are owed money'
+                  : myBalance.amount < -0.01
+                    ? 'You owe money'
+                    : 'All settled up!'}
               </p>
             </div>
           </div>
         )}
 
         {/* All member balances */}
-        <div>
-          <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1">Members</h2>
-          <div className="space-y-2">
-            {balances.map(b => {
-              const profile = profiles[b.userId]
-              if (!profile) return null
-              return (
-                <div key={b.userId} className="glass-panel rounded-2xl px-4 py-3 flex items-center gap-3">
-                  <Avatar name={profile.name} imageUrl={profile.avatar_url} size="sm" />
-                  <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white truncate">
-                    {b.userId === currentUserId ? 'You' : profile.name}
-                  </span>
-                  <div className={`flex items-center gap-1 ${b.amount >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {b.amount >= 0 ? <ArrowRight size={14} /> : <ArrowRight size={14} className="rotate-180" />}
-                    <span className="text-sm font-bold">{formatCurrency(Math.abs(b.amount))}</span>
+        {balances.length > 0 && (
+          <div>
+            <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1">Members</h2>
+            <div className="space-y-2">
+              {balances.map(b => {
+                const profile = profiles[b.userId]
+                if (!profile) return null
+                // Fix Issue #11: skip members with $0 balance
+                if (Math.abs(b.amount) < 0.01) return null
+                return (
+                  <div key={b.userId} className="glass-panel rounded-2xl px-4 py-3 flex items-center gap-3">
+                    <Avatar name={profile.name} imageUrl={profile.avatar_url} size="sm" />
+                    <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {b.userId === currentUserId ? 'You' : profile.name}
+                    </span>
+                    <div className={`flex items-center gap-1 ${b.amount >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {b.amount >= 0
+                        ? <ArrowRight size={14} />
+                        : <ArrowRight size={14} className="rotate-180" />}
+                      <span className="text-sm font-bold">{formatCurrency(Math.abs(b.amount))}</span>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Settle Up */}
         {isSettledUp ? (
@@ -105,17 +142,18 @@ export default function GroupBalancesPage() {
           <div>
             <h2 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3 ml-1 mt-2">Settle Up</h2>
             <div className="space-y-3">
-              {debts.map((debt) => {
+              {debtCards.map(({ debt, pendingAmount, remainingDebt }) => {
                 const key = `${debt.from}-${debt.to}`
-                const pendingAmount = pendingSettlements
-                  .filter(s => s.from_user === debt.from && s.to_user === debt.to)
-                  .reduce((sum, s) => sum + s.amount, 0)
-                const remainingDebt = debt.amount - pendingAmount
+                // Chỉ render nếu còn nợ thực sự hoặc đang chờ confirm
+                if (remainingDebt <= 0 && pendingAmount <= 0) return null
                 return (
                   <DebtCard
-                    key={key} debt={debt} profiles={profiles}
+                    key={key}
+                    debt={debt}
+                    profiles={profiles}
                     currentUserId={currentUserId}
-                    pendingAmount={pendingAmount} remainingDebt={remainingDebt}
+                    pendingAmount={pendingAmount}
+                    remainingDebt={remainingDebt}
                     settling={settling}
                     rawShares={rawShares}
                     onMarkPaid={(d, amt) => handleSettle(d, amt)}

@@ -1,6 +1,7 @@
+// hooks/useGroupBalances.ts
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Balance, Debt, Profile } from '@/lib/types'
 import { calculateBalances, simplifyDebts } from '@/lib/utils'
@@ -20,8 +21,16 @@ export function useGroupBalances(groupId: string) {
   const [rawShares, setRawShares] = useState<any[]>([])
   const [memberIds, setMemberIds] = useState<string[]>([])
 
-  // ── Helper: recalculate from raw data ────────────────────────────────────
-  const recalcFromData = (shares: any[], allSettlements: any[], ids: string[]) => {
+  // Refs để tránh stale closure trong Realtime handlers
+  const sharesRef = useRef<any[]>([])
+  const settlementsRef = useRef<any[]>([])
+  const memberIdsRef = useRef<string[]>([])
+
+  const recalcFromData = (
+    shares: any[],
+    allSettlements: any[],
+    ids: string[],
+  ) => {
     const completed = allSettlements.filter((s: any) => s.status === 'completed')
     setPendingSettlements(allSettlements.filter((s: any) => s.status === 'pending'))
     const bal = calculateBalances(shares, completed, ids)
@@ -31,68 +40,83 @@ export function useGroupBalances(groupId: string) {
 
   useEffect(() => {
     const supabase = createClient()
-    let allShares: any[] = []
-    let allSettlements: any[] = []
-    let ids: string[] = []
 
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setCurrentUserId(user.id)
 
-      const [{ data: members }, { data: shares }, { data: settlements }] = await Promise.all([
-        fetchGroupMembers(supabase, groupId),
-        fetchExpenseShares(supabase, groupId),
-        fetchSettlements(supabase, groupId),
-      ])
+      const [{ data: members }, { data: shares }, { data: settlements }] =
+        await Promise.all([
+          fetchGroupMembers(supabase, groupId),
+          fetchExpenseShares(supabase, groupId),
+          fetchSettlements(supabase, groupId),
+        ])
 
       const profileMap: Record<string, Profile> = {}
-      ids = []
+      const ids: string[] = []
       if (members) {
         members.forEach((m: any) => {
-          if (m.profiles) { profileMap[m.user_id] = m.profiles; ids.push(m.user_id) }
+          if (m.profiles) {
+            profileMap[m.user_id] = m.profiles
+            ids.push(m.user_id)
+          }
         })
       }
       setProfiles(profileMap)
       setMemberIds(ids)
 
-      allShares = shares ?? []
-      allSettlements = settlements ?? []
-      setRawShares(allShares)
-      recalcFromData(allShares, allSettlements, ids)
+      // Gán vào refs trước khi recalc
+      sharesRef.current = shares ?? []
+      settlementsRef.current = settlements ?? []
+      memberIdsRef.current = ids
+
+      setRawShares(sharesRef.current)
+      recalcFromData(sharesRef.current, settlementsRef.current, ids)
       setLoading(false)
     }
 
     init()
 
-    // ── Realtime subscriptions ───────────────────────────────────────────
     const channel = supabase
       .channel(`balances-${groupId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements' }, async () => {
-        const { data } = await fetchSettlements(supabase, groupId)
-        if (data) {
-          allSettlements = data
-          recalcFromData(allShares, data, ids)
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expense_shares' }, async () => {
-        const { data } = await fetchExpenseShares(supabase, groupId)
-        if (data) {
-          allShares = data
-          setRawShares(data)
-          recalcFromData(data, allSettlements, ids)
-        }
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'settlements' },
+        async () => {
+          const { data } = await fetchSettlements(supabase, groupId)
+          if (data) {
+            settlementsRef.current = data
+            recalcFromData(sharesRef.current, data, memberIdsRef.current)
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expense_shares' },
+        async () => {
+          const { data } = await fetchExpenseShares(supabase, groupId)
+          if (data) {
+            sharesRef.current = data
+            setRawShares(data)
+            recalcFromData(data, settlementsRef.current, memberIdsRef.current)
+          }
+        },
+      )
       .subscribe()
 
-    // Refetch when tab becomes visible again
     const onVisibility = async () => {
       if (document.visibilityState !== 'visible') return
-      const { data } = await fetchSettlements(supabase, groupId)
-      if (data) {
-        allSettlements = data
-        recalcFromData(allShares, data, ids)
+      const [{ data: settlements }, { data: shares }] = await Promise.all([
+        fetchSettlements(supabase, groupId),
+        fetchExpenseShares(supabase, groupId),
+      ])
+      if (settlements) settlementsRef.current = settlements
+      if (shares) {
+        sharesRef.current = shares
+        setRawShares(shares)
       }
+      recalcFromData(sharesRef.current, settlementsRef.current, memberIdsRef.current)
     }
     document.addEventListener('visibilitychange', onVisibility)
 
@@ -102,5 +126,9 @@ export function useGroupBalances(groupId: string) {
     }
   }, [groupId])
 
-  return { balances, debts, profiles, currentUserId, loading, pendingSettlements, rawShares, memberIds, setPendingSettlements }
+  // Không expose setPendingSettlements — Realtime quản lý hoàn toàn
+  return {
+    balances, debts, profiles, currentUserId, loading,
+    pendingSettlements, rawShares, memberIds,
+  }
 }

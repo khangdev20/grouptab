@@ -1,5 +1,5 @@
 # GroupTab — Project Documentation
-> Updated: 2026-05-01 (Session 3)
+> Updated: 2026-05-02 (Session 4)
 
 ---
 
@@ -57,8 +57,7 @@ components/
 │   ├── ChatHeader.tsx        # Nav header
 │   └── ExpenseModal.tsx      # Add/Edit expense form
 ├── balances/
-│   ├── DebtCard.tsx          # Debt row with expandable breakdown + actions
-│   └── PendingDebtCard.tsx   # Amber pending-only card
+│   ├── DebtCard.tsx          # Debt row with expandable breakdown + actions (handles pending & unpaid)
 ├── receipt/
 │   └── ItemCard.tsx          # Receipt item assignment
 └── ui/
@@ -77,7 +76,7 @@ lib/
 
 ---
 
-## 3. Database Schema (10 migrations applied)
+## 3. Database Schema (11 migrations applied)
 
 | Table | Key Columns |
 |---|---|
@@ -140,10 +139,10 @@ lib/
 - [x] Net balance calculation (minimum cash flow algorithm)
 - [x] Real-time sync via Supabase subscriptions (settlements + expense_shares)
 - [x] Refetch on visibility change
-- [x] Mark Paid → creates pending settlement (UI awaits realtime sync to prevent flashing)
-- [x] Confirm Received → updates existing pending to completed (UI awaits realtime sync)
+- [x] Mark Paid → creates pending settlement (with optimistic UI update to instantly hide button)
+- [x] Confirm Received → updates existing pending to completed
 - [x] Pending confirmation notice shown inline
-- [x] "Pay Now" button on ExpenseBubble → navigates to balances page
+- [x] "Pay Now" button on ExpenseBubble → navigates to balances page (dynamically hidden when debt is pending or settled)
 - [x] **Debt Breakdown** — expandable per-expense list explaining why a debt exists
   - Shows which expenses created the debt (owed direction 🔴)
   - Shows which expenses reduce it (offset direction 🟢)
@@ -152,7 +151,7 @@ lib/
 
 ### Settlements / Balances Page
 - [x] Per-member balance chip
-- [x] Debt cards (DebtCard + PendingDebtCard)
+- [x] Debt cards (unified `DebtCard` for both pending and active debts, preserving breakdown logic)
 - [x] Remind debtor push notification (rate-limited: 2 per 48h, localStorage)
 - [x] "All settled up" empty state
 - [x] Stays on balances page after settling (no redirect)
@@ -196,7 +195,6 @@ lib/
 |---|---|---|---|
 | 1 | **`010` migration not auto-applied** | Supabase | Delete group returns RLS error until SQL is run manually |
 | 2 | **Leave group debt check uses wrong column** | `settings/page.tsx:77` | Uses `from_user_id` / `to_user_id` but schema has `from_user` / `to_user` → debt guard never blocks |
-| 3 | **`settledPairs` not updated on new settlements** | `useGroupChat.ts` | Fetched once at init; "Pay Now" won't auto-hide until page reload |
 
 ### 🟠 Logic Issues
 
@@ -239,8 +237,7 @@ lib/
 
 ### Priority 1 — Bug fixes
 1. Fix `from_user_id` → `from_user` in `settings/page.tsx:77` (leave group debt guard)
-2. Subscribe to `settlements` in `useGroupChat` to update `settledPairs` live
-3. Apply `010` migration in Supabase Dashboard
+2. Apply `010` migration in Supabase Dashboard
 
 ### Priority 2 — UX polish
 4. Add confirm dialog on expense delete (`ExpenseBubble`)
