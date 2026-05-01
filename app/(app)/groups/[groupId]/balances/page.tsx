@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Balance, Debt, Profile } from '@/lib/types'
@@ -22,10 +22,28 @@ export default function GroupBalancesPage() {
   const [pendingSettlements, setPendingSettlements] = useState<any[]>([])
   // remindMap: key = `${debtorId}-${creditorId}`, value = { count, windowStart }
   const [remindMap, setRemindMap] = useState<Record<string, { count: number; windowStart: number }>>({})
+  // Raw data stored in state so realtime can trigger recalculation
+  const [rawShares, setRawShares] = useState<any[]>([])
+  const [memberIds, setMemberIds] = useState<string[]>([])
+
+  /** Re-run balance calculation from current raw data */
+  const recalculate = useCallback((shares: any[], allSettlements: any[]) => {
+    const completed = allSettlements.filter((s: any) => s.status === 'completed')
+    setPendingSettlements(allSettlements.filter((s: any) => s.status === 'pending'))
+    setMemberIds(prev => {
+      const bal = calculateBalances(shares, completed, prev)
+      setBalances(bal)
+      setDebts(simplifyDebts(bal))
+      return prev
+    })
+  }, [])
 
   useEffect(() => {
+    const supabase = createClient()
+    let allShares: any[] = []
+    let allSettlements: any[] = []
+
     const init = async () => {
-      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setCurrentUserId(user.id)
@@ -37,25 +55,71 @@ export default function GroupBalancesPage() {
       ])
 
       const profileMap: Record<string, Profile> = {}
-      const memberIds: string[] = []
+      const ids: string[] = []
       if (members) {
         members.forEach((m: any) => {
-          if (m.profiles) {
-            profileMap[m.user_id] = m.profiles
-            memberIds.push(m.user_id)
-          }
+          if (m.profiles) { profileMap[m.user_id] = m.profiles; ids.push(m.user_id) }
         })
       }
       setProfiles(profileMap)
+      setMemberIds(ids)
 
-      const completedSettlements = (settlements ?? []).filter((s: any) => s.status === 'completed')
-      setPendingSettlements((settlements ?? []).filter((s: any) => s.status === 'pending'))
-      const bal = calculateBalances(shares ?? [], completedSettlements, memberIds)
+      allShares = shares ?? []
+      allSettlements = settlements ?? []
+      setRawShares(allShares)
+
+      const completed = allSettlements.filter((s: any) => s.status === 'completed')
+      setPendingSettlements(allSettlements.filter((s: any) => s.status === 'pending'))
+      const bal = calculateBalances(allShares, completed, ids)
       setBalances(bal)
       setDebts(simplifyDebts(bal))
       setLoading(false)
     }
+
     init()
+
+    // ── Realtime: settlements changed ────────────────────────────────────
+    const channel = supabase
+      .channel(`balances-${groupId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `group_id=eq.${groupId}` }, async () => {
+        // Re-fetch settlements and recalculate
+        const { data } = await supabase.from('settlements').select('*').eq('group_id', groupId)
+        if (data) {
+          allSettlements = data
+          const completed = data.filter((s: any) => s.status === 'completed')
+          setPendingSettlements(data.filter((s: any) => s.status === 'pending'))
+          setRawShares(prev => {
+            const bal = calculateBalances(prev, completed, memberIds)
+            setBalances(bal)
+            setDebts(simplifyDebts(bal))
+            return prev
+          })
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expense_shares' }, async () => {
+        // Re-fetch shares and recalculate
+        const { data } = await supabase
+          .from('expense_shares')
+          .select('*, expenses!inner(group_id, paid_by, total_amount)')
+          .eq('expenses.group_id', groupId)
+        if (data) {
+          allShares = data
+          setRawShares(data)
+          setPendingSettlements(prev => {
+            setMemberIds(ids => {
+              const completed = allSettlements.filter((s: any) => s.status === 'completed')
+              const bal = calculateBalances(data, completed, ids)
+              setBalances(bal)
+              setDebts(simplifyDebts(bal))
+              return ids
+            })
+            return prev
+          })
+        }
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [groupId])
 
   // Load remind state from localStorage on mount
@@ -287,10 +351,6 @@ export default function GroupBalancesPage() {
                     .filter((s) => s.from_user === debt.from && s.to_user === debt.to)
                     .reduce((sum, s) => sum + s.amount, 0)
                   const remainingDebt = debt.amount - pendingAmount
-                  // Reverse pending: a settlement going the OPPOSITE direction (will conflict when confirmed)
-                  const reversePendingAmount = pendingSettlements
-                    .filter((s) => s.from_user === debt.to && s.to_user === debt.from)
-                    .reduce((sum, s) => sum + s.amount, 0)
 
                   if (remainingDebt <= 0 && pendingAmount > 0) {
                     return (
@@ -341,18 +401,10 @@ export default function GroupBalancesPage() {
                             <span className="font-bold">{toIsMe ? 'you' : to?.name}</span>
                           </p>
                           <p className="text-sm font-black text-emerald-500 mt-0.5">{formatCurrency(remainingDebt)}</p>
-                          {/* Pending same-direction notice */}
                           {pendingAmount > 0 && (
                             <p className="text-[11px] font-semibold text-amber-500 mt-0.5 flex items-center gap-1">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                               {formatCurrency(pendingAmount)} pending confirmation
-                            </p>
-                          )}
-                          {/* Reverse pending warning: debt direction flipped after a pending was created */}
-                          {reversePendingAmount > 0 && (
-                            <p className="text-[11px] font-semibold text-orange-500 mt-0.5 flex items-center gap-1">
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                              {toIsMe ? `Your` : `${to?.name?.split(' ')[0]}'s`} {formatCurrency(reversePendingAmount)} payment is pending — confirm it first
                             </p>
                           )}
                         </div>
@@ -361,12 +413,11 @@ export default function GroupBalancesPage() {
                         {fromIsMe && (
                           <button
                             onClick={() => handleSettle({ ...debt, amount: remainingDebt })}
-                            disabled={settling === key || reversePendingAmount > 0}
-                            title={reversePendingAmount > 0 ? 'Wait for the reverse pending payment to be confirmed first' : undefined}
-                            className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-emerald-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
+                            disabled={settling === key}
+                            className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                           >
                             <CheckCircle2 size={16} />
-                            {settling === key ? '...' : reversePendingAmount > 0 ? 'Awaiting confirm…' : 'Mark Paid'}
+                            {settling === key ? '...' : 'Mark Paid'}
                           </button>
                         )}
                         {toIsMe && (() => {
