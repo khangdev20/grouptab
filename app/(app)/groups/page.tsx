@@ -135,8 +135,57 @@ export default function GroupsPage() {
 
       setGroups(enriched as GroupWithActivity[])
       setLoading(false)
+
+      // ── Realtime Subscription for Feed Activity ────────────────────────────
+      const channel = supabase
+        .channel('groups-feed-activity')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          (payload) => {
+            const msg = payload.new as any
+            
+            setGroups((prevGroups) => {
+              const groupIndex = prevGroups.findIndex((g) => g.id === msg.group_id)
+              // If we aren't tracking this group, ignore
+              if (groupIndex === -1) return prevGroups
+
+              let preview = ''
+              if (msg.type === 'text') preview = msg.content ?? ''
+              else if (msg.type === 'expense') preview = '💸 New expense'
+              else if (msg.type === 'settlement') preview = '✅ Payment recorded'
+              else if (msg.type === 'image') preview = '📷 Photo'
+              else if (msg.type === 'receipt_pending') preview = '🧾 Receipt uploaded'
+
+              const newGroups = [...prevGroups]
+              newGroups[groupIndex] = {
+                ...newGroups[groupIndex],
+                lastActivityAt: msg.created_at,
+                lastMessagePreview: preview,
+              }
+
+              // Re-sort by lastActivityAt DESC
+              return newGroups.sort(
+                (a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()
+              )
+            })
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
     }
-    fetchGroups()
+    
+    let cleanup: (() => void) | undefined
+    fetchGroups().then((cleanupFn) => {
+      cleanup = cleanupFn
+    })
+
+    return () => {
+      if (cleanup) cleanup()
+    }
   }, [])
 
   return (
