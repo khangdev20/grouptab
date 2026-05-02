@@ -76,71 +76,46 @@ export function useSettlement({
           s => s.from_user === debt.from && s.to_user === debt.to,
         )
 
-        if (existingPending.length > 0) {
-          for (const s of existingPending) {
-            const { error } = await supabase
-              .from('settlements')
-              .update({ status: 'completed' })
-              .eq('id', s.id)
-
-            if (error) throw new Error(error.message)
-
-            // Fix: dùng filter đúng cho jsonb column
-            await supabase
-              .from('messages')
-              .update({
-                content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(s.amount)}`,
-                metadata: {
-                  settlement_id: s.id,
-                  amount: s.amount,
-                  from_user: s.from_user,
-                  from_name: fromProfile?.name ?? '',
-                  to_user: s.to_user,
-                  to_name: toProfile?.name ?? '',
-                  status: 'completed',
-                },
-              })
-              .eq('type', 'settlement')
-              .filter('metadata->>settlement_id', 'eq', s.id)
-          }
-        } else {
-          // Không có pending → creditor tự tạo completed (direct confirm)
-          const { data: settlement, error } = await supabase
-            .from('settlements')
-            .insert({
-              group_id: groupId,
-              from_user: debt.from,
-              to_user: debt.to,
-              amount,
-              status: 'completed',
-            })
-            .select()
-            .single()
-
-          if (error || !settlement) throw new Error(error?.message ?? 'Failed to confirm')
-
-          await supabase.from('messages').insert({
-            group_id: groupId,
-            sender_id: currentUserId,
-            type: 'settlement',
-            content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(amount)}`,
-            metadata: {
-              settlement_id: settlement.id,
-              amount,
-              from_user: debt.from,
-              from_name: fromProfile?.name ?? '',
-              to_user: debt.to,
-              to_name: toProfile?.name ?? '',
-              status: 'completed',
-            },
-          })
+        // FIX Bug #3: block ghost confirm — creditor cannot confirm without a debtor-initiated pending
+        if (existingPending.length === 0) {
+          toast.error(`No pending payment from ${fromProfile?.name ?? 'the debtor'} yet. Ask them to mark as paid first.`)
+          return
         }
 
-        toast.success('Payment confirmed!')
+        for (const s of existingPending) {
+          const { error } = await supabase
+            .from('settlements')
+            .update({ status: 'completed' })
+            .eq('id', s.id)
+
+          if (error) throw new Error(error.message)
+
+          // Update the corresponding settlement message
+          await supabase
+            .from('messages')
+            .update({
+              content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(s.amount)}`,
+              metadata: {
+                settlement_id: s.id,
+                // FIX Bug #2: always use s.amount from the DB record, not the UI-passed amount
+                amount: s.amount,
+                from_user: s.from_user,
+                from_name: fromProfile?.name ?? '',
+                to_user: s.to_user,
+                to_name: toProfile?.name ?? '',
+                status: 'completed',
+              },
+            })
+            .eq('type', 'settlement')
+            .filter('metadata->>settlement_id', 'eq', s.id)
+        }
+
+        const confirmedTotal = existingPending.reduce((sum, s) => sum + s.amount, 0)
+        toast.success(`Confirmed ${formatCurrency(confirmedTotal)} payment!`)
         pushGroupNotify(
           groupId,
           'Payment confirmed',
-          `Your payment of ${formatCurrency(amount)} has been confirmed.`,
+          `Your payment of ${formatCurrency(confirmedTotal)} has been confirmed by ${toProfile?.name?.split(' ')[0] ?? 'the creditor'}.`,
           'settlement',
         )
       }
