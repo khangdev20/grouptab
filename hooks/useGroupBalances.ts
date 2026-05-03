@@ -18,6 +18,7 @@ export function useGroupBalances(groupId: string) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [pendingSettlements, setPendingSettlements] = useState<any[]>([])
+  const [allSettlements, setAllSettlements] = useState<any[]>([])
   const [rawShares, setRawShares] = useState<any[]>([])
   const [memberIds, setMemberIds] = useState<string[]>([])
 
@@ -33,6 +34,7 @@ export function useGroupBalances(groupId: string) {
   ) => {
     const completed = allSettlements.filter((s: any) => s.status === 'completed')
     setPendingSettlements(allSettlements.filter((s: any) => s.status === 'pending'))
+    setAllSettlements(allSettlements)
     const bal = calculateBalances(shares, completed, ids)
     setBalances(bal)
     setDebts(simplifyDebts(bal))
@@ -143,7 +145,7 @@ export function useGroupBalances(groupId: string) {
 
   return {
     balances, debts, profiles, currentUserId, loading,
-    pendingSettlements, rawShares, memberIds,
+    pendingSettlements, allSettlements, rawShares, memberIds,
     refetch,
   }
 }

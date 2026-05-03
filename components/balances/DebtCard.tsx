@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   CheckCircle2, Bell, ChevronDown, TrendingUp, TrendingDown,
   Clock, CircleCheckBig, CircleDollarSign, X, RotateCcw,
+  CheckCheck, XCircle, Ban,
 } from 'lucide-react'
 import { Debt, Profile } from '@/lib/types'
 import { formatCurrency, formatDate, getDebtBreakdown, DebtBreakdownItem } from '@/lib/utils'
@@ -18,6 +19,41 @@ const CATEGORY_EMOJI: Record<string, string> = {
   other: '📎',
 }
 
+const STATUS_CONFIG = {
+  completed: {
+    icon: CheckCheck,
+    label: 'Confirmed',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+    border: 'border-emerald-200/60 dark:border-emerald-800/40',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    badge: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+  },
+  pending: {
+    icon: Clock,
+    label: 'Awaiting',
+    bg: 'bg-amber-50 dark:bg-amber-900/20',
+    border: 'border-amber-200/60 dark:border-amber-800/40',
+    text: 'text-amber-600 dark:text-amber-400',
+    badge: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+  },
+  rejected: {
+    icon: XCircle,
+    label: 'Rejected',
+    bg: 'bg-red-50 dark:bg-red-900/20',
+    border: 'border-red-200/60 dark:border-red-800/40',
+    text: 'text-red-500 dark:text-red-400',
+    badge: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+  },
+  cancelled: {
+    icon: Ban,
+    label: 'Cancelled',
+    bg: 'bg-gray-50 dark:bg-neutral-800/40',
+    border: 'border-gray-200/60 dark:border-neutral-700/40',
+    text: 'text-gray-400 dark:text-gray-500',
+    badge: 'bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400',
+  },
+} as const
+
 interface DebtCardProps {
   debt: Debt
   profiles: Record<string, Profile>
@@ -27,6 +63,7 @@ interface DebtCardProps {
   excessPending: number
   settling: string | null
   rawShares: any[]
+  pairSettlements: any[]
   onMarkPaid: (debt: Debt, amount: number) => void
   onConfirm: (debt: Debt, amount: number) => void
   onReject: (debt: Debt) => void
@@ -38,10 +75,11 @@ interface DebtCardProps {
 export default function DebtCard({
   debt, profiles, currentUserId,
   pendingAmount, remainingDebt, excessPending,
-  settling, rawShares,
+  settling, rawShares, pairSettlements,
   onMarkPaid, onConfirm, onReject, onCancel, onRemind, remindState,
 }: DebtCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   const from = profiles[debt.from]
   const to = profiles[debt.to]
@@ -51,16 +89,31 @@ export default function DebtCard({
   const { canRemind, remaining } = remindState
   const isSettling = settling === key
 
-  const breakdown: DebtBreakdownItem[] = getDebtBreakdown(debt.from, debt.to, rawShares)
+  // Find last completed settlement timestamp to filter breakdown
+  const lastCompletedAt = pairSettlements
+    .filter(s => s.status === 'completed')
+    .map(s => new Date(s.created_at).getTime())
+    .sort((a, b) => b - a)[0] ?? null
+
+  const allBreakdown: DebtBreakdownItem[] = getDebtBreakdown(debt.from, debt.to, rawShares)
+
+  // Only show expenses that occurred after the last completed settlement
+  const breakdown = lastCompletedAt
+    ? allBreakdown.filter(item => new Date(item.date).getTime() > lastCompletedAt)
+    : allBreakdown
+
   const owedItems = breakdown.filter(i => i.direction === 'owed')
   const offsetItems = breakdown.filter(i => i.direction === 'offset')
+
+  const sortedHistory = [...pairSettlements].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
 
   const fromName = fromIsMe ? 'You' : from?.name?.split(' ')[0] ?? '?'
   const toName = toIsMe ? 'you' : to?.name?.split(' ')[0] ?? '?'
 
   const hasPending = pendingAmount > 0
   const isFullyPending = remainingDebt <= 0 && hasPending
-  // Progress: how much of the original debt is covered (pending + already-confirmed portion)
   const totalOriginal = debt.amount
   const progressPct = totalOriginal > 0
     ? Math.min(100, Math.round((pendingAmount / totalOriginal) * 100))
@@ -113,7 +166,6 @@ export default function DebtCard({
               <span className="font-bold">{toIsMe ? 'you' : to?.name}</span>
             </p>
 
-            {/* Amount row */}
             <div className="flex items-baseline gap-2 mt-0.5">
               {remainingDebt > 0 ? (
                 <>
@@ -134,25 +186,41 @@ export default function DebtCard({
             </div>
           </div>
 
-          {/* Breakdown toggle */}
-          {breakdown.length > 0 && (
-            <button
-              onClick={() => setExpanded(v => !v)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors haptic flex-shrink-0"
-              aria-label={expanded ? 'Hide breakdown' : 'Show breakdown'}
-            >
-              <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
-                {breakdown.length} expense{breakdown.length !== 1 ? 's' : ''}
-              </span>
-              <ChevronDown
-                size={13}
-                className={`text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-              />
-            </button>
-          )}
+          {/* Breakdown + history toggles */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {breakdown.length > 0 && (
+              <button
+                onClick={() => { setExpanded(v => !v); setShowHistory(false) }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors haptic"
+                aria-label={expanded ? 'Hide breakdown' : 'Show breakdown'}
+              >
+                <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                  {breakdown.length} expense{breakdown.length !== 1 ? 's' : ''}
+                </span>
+                <ChevronDown
+                  size={13}
+                  className={`text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                />
+              </button>
+            )}
+            {sortedHistory.length > 0 && (
+              <button
+                onClick={() => { setShowHistory(v => !v); setExpanded(false) }}
+                className={`px-2.5 py-1.5 rounded-xl transition-colors haptic flex items-center gap-1 ${
+                  showHistory
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    : 'bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-neutral-700'
+                }`}
+                title="Payment history"
+              >
+                <span className="text-[11px] font-bold">{sortedHistory.length}</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${showHistory ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* ── Progress bar (only when partial/full pending) ─────────────── */}
+        {/* ── Progress bar ─────────────────────────────────────────────────── */}
         {hasPending && totalOriginal > 0 && (
           <div className="mt-3">
             <div className="relative h-1.5 bg-gray-200 dark:bg-neutral-700 rounded-full overflow-hidden">
@@ -176,8 +244,6 @@ export default function DebtCard({
 
         {/* ── Action buttons ─────────────────────────────────────────────── */}
         <div className="flex gap-2 mt-3">
-
-          {/* DEBTOR: Mark Paid — only if still has remaining debt */}
           {fromIsMe && remainingDebt > 0 && (
             <button
               onClick={() => onMarkPaid(debt, remainingDebt)}
@@ -189,7 +255,6 @@ export default function DebtCard({
             </button>
           )}
 
-          {/* DEBTOR: Cancel pending — debtor cancels before creditor confirms */}
           {fromIsMe && hasPending && (
             <button
               onClick={() => onCancel(debt)}
@@ -202,15 +267,11 @@ export default function DebtCard({
             </button>
           )}
 
-          {/* CREDITOR: Remind — only if there's remaining debt */}
           {toIsMe && remainingDebt > 0 && (
             <button
               onClick={() => onRemind(debt)}
               disabled={!canRemind}
-              title={canRemind
-                ? `Remind ${from?.name} (${remaining} left)`
-                : 'Reminder limit reached for 48h'
-              }
+              title={canRemind ? `Remind ${from?.name} (${remaining} left)` : 'Reminder limit reached for 48h'}
               className={`py-2.5 px-3.5 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${
                 canRemind
                   ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100'
@@ -222,7 +283,6 @@ export default function DebtCard({
             </button>
           )}
 
-          {/* CREDITOR: Confirm payment */}
           {toIsMe && hasPending && (
             <button
               onClick={() => onConfirm(debt, pendingAmount)}
@@ -234,7 +294,6 @@ export default function DebtCard({
             </button>
           )}
 
-          {/* CREDITOR: Reject payment — payment wasn't actually received */}
           {toIsMe && hasPending && (
             <button
               onClick={() => onReject(debt)}
@@ -247,7 +306,6 @@ export default function DebtCard({
             </button>
           )}
 
-          {/* DEBTOR: Waiting state — paid all, waiting for creditor */}
           {fromIsMe && remainingDebt <= 0 && hasPending && (
             <div className="flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40">
               <Clock size={15} className="animate-pulse" />
@@ -257,15 +315,23 @@ export default function DebtCard({
         </div>
       </div>
 
-      {/* ── Expandable breakdown ───────────────────────────────────────────── */}
+      {/* ── Expandable expense breakdown ──────────────────────────────────── */}
       {expanded && breakdown.length > 0 && (
         <div className="border-t border-gray-200/60 dark:border-neutral-700/60 px-4 pt-3 pb-4 bg-gray-50/60 dark:bg-neutral-800/30">
+          {lastCompletedAt && (
+            <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/30">
+              <CheckCheck size={11} className="text-emerald-500 flex-shrink-0" />
+              <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                Showing expenses since last confirmed payment · {formatDate(new Date(lastCompletedAt).toISOString())}
+              </p>
+            </div>
+          )}
+
           <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
             Expense breakdown
           </p>
 
           <div className="space-y-1.5">
-            {/* Owed items — creditor paid */}
             {owedItems.map((item) => (
               <div key={item.expenseId} className="flex items-center gap-2.5 py-1.5">
                 <span className="text-base flex-shrink-0 w-6 text-center">{CATEGORY_EMOJI[item.category] ?? '📎'}</span>
@@ -282,12 +348,10 @@ export default function DebtCard({
               </div>
             ))}
 
-            {/* Divider if both types exist */}
             {owedItems.length > 0 && offsetItems.length > 0 && (
               <div className="border-t border-dashed border-gray-200 dark:border-neutral-700 my-2" />
             )}
 
-            {/* Offset items — debtor paid (reduces debt) */}
             {offsetItems.map((item) => (
               <div key={item.expenseId} className="flex items-center gap-2.5 py-1.5">
                 <span className="text-base flex-shrink-0 w-6 text-center">{CATEGORY_EMOJI[item.category] ?? '📎'}</span>
@@ -305,7 +369,6 @@ export default function DebtCard({
             ))}
           </div>
 
-          {/* Net summary */}
           <div className="mt-3 pt-3 border-t border-gray-200/60 dark:border-neutral-700/60 flex items-center justify-between">
             <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Net owed</p>
             {isFullyPending ? (
@@ -319,11 +382,46 @@ export default function DebtCard({
             )}
           </div>
 
-          {breakdown.length > 0 && (
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">
-              Showing direct expenses between {fromName} and {toName}
-            </p>
-          )}
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 text-center">
+            Showing direct expenses between {fromName} and {toName}
+          </p>
+        </div>
+      )}
+
+      {/* ── Payment history ────────────────────────────────────────────────── */}
+      {showHistory && sortedHistory.length > 0 && (
+        <div className="border-t border-gray-200/60 dark:border-neutral-700/60 px-4 pt-3 pb-4 bg-gray-50/60 dark:bg-neutral-800/30">
+          <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
+            Payment history
+          </p>
+
+          <div className="space-y-2">
+            {sortedHistory.map((s) => {
+              const cfg = STATUS_CONFIG[s.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.cancelled
+              const StatusIcon = cfg.icon
+              const isSentByMe = s.from_user === currentUserId
+              return (
+                <div
+                  key={s.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl border ${cfg.bg} ${cfg.border}`}
+                >
+                  <StatusIcon size={14} className={`flex-shrink-0 ${cfg.text} ${s.status === 'pending' ? 'animate-pulse' : ''}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-gray-800 dark:text-gray-200">
+                      {isSentByMe ? 'You' : fromName} paid {isSentByMe ? toName : 'you'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">{formatDate(s.created_at)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <p className={`text-[13px] font-black ${cfg.text}`}>{formatCurrency(s.amount)}</p>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>
+                      {cfg.label.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -19,7 +19,7 @@ export default function GroupBalancesPage() {
 
   const {
     balances, debts, profiles, currentUserId, loading,
-    pendingSettlements, rawShares, refetch,
+    pendingSettlements, allSettlements, rawShares, refetch,
   } = useGroupBalances(groupId)
 
   const { settling, handleSettle, handleReject, handleCancel } = useSettlement({
@@ -44,13 +44,15 @@ export default function GroupBalancesPage() {
   const myBalance = balances.find(b => b.userId === currentUserId)
 
   const debtCards = debts.map(debt => {
-    const pendingAmount = pendingSettlements
-      .filter(s => s.from_user === debt.from && s.to_user === debt.to)
+    const pairSettlements = allSettlements.filter(
+      s => s.from_user === debt.from && s.to_user === debt.to
+    )
+    const pendingAmount = pairSettlements
+      .filter(s => s.status === 'pending')
       .reduce((sum, s) => sum + s.amount, 0)
     const remainingDebt = Math.max(0, Math.round((debt.amount - pendingAmount) * 100) / 100)
-    // pendingAmount can exceed debt.amount when a new expense is added after debtor marks paid
     const excessPending = Math.max(0, Math.round((pendingAmount - debt.amount) * 100) / 100)
-    return { debt, pendingAmount, remainingDebt, excessPending }
+    return { debt, pendingAmount, remainingDebt, excessPending, pairSettlements }
   })
 
   const debtKeys = new Set(debts.map(d => `${d.from}-${d.to}`))
@@ -241,7 +243,7 @@ export default function GroupBalancesPage() {
             </div>
 
             <div className="space-y-3">
-              {debtCards.map(({ debt, pendingAmount, remainingDebt, excessPending }) => {
+              {debtCards.map(({ debt, pendingAmount, remainingDebt, excessPending, pairSettlements }) => {
                 const key = `${debt.from}-${debt.to}`
                 if (remainingDebt <= 0 && pendingAmount <= 0) return null
                 return (
@@ -255,6 +257,7 @@ export default function GroupBalancesPage() {
                     excessPending={excessPending}
                     settling={settling}
                     rawShares={rawShares}
+                    pairSettlements={pairSettlements}
                     onMarkPaid={(d, amt) => handleSettle(d, amt)}
                     onConfirm={(d, amt) => handleSettle(d, amt)}
                     onReject={(d) => handleReject(d)}
