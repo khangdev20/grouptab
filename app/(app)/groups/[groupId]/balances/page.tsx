@@ -9,7 +9,7 @@ import DebtCard from '@/components/balances/DebtCard'
 import Avatar from '@/components/ui/Avatar'
 import {
   ArrowLeft, PartyPopper, TrendingUp, TrendingDown,
-  Minus, Clock, Users,
+  Minus, Clock, Users, CircleCheckBig, RotateCcw, X,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import Link from 'next/link'
@@ -22,7 +22,7 @@ export default function GroupBalancesPage() {
     pendingSettlements, rawShares,
   } = useGroupBalances(groupId)
 
-  const { settling, handleSettle } = useSettlement({
+  const { settling, handleSettle, handleReject, handleCancel } = useSettlement({
     groupId, profiles, pendingSettlements, currentUserId,
   })
 
@@ -57,7 +57,7 @@ export default function GroupBalancesPage() {
 
   const isSettledUp = debtCards.every(c => c.remainingDebt === 0) && orphanPending.length === 0
 
-  // Compute summary stats
+  // Summary stats
   const totalOwedToMe = debts
     .filter(d => d.to === currentUserId)
     .reduce((s, d) => s + d.amount, 0)
@@ -66,7 +66,6 @@ export default function GroupBalancesPage() {
     .reduce((s, d) => s + d.amount, 0)
   const totalPending = pendingSettlements.reduce((s, p) => s + p.amount, 0)
 
-  // Sorted member balances for the bar chart
   const memberBalances = balances
     .filter(b => Math.abs(b.amount) >= 0.01)
     .sort((a, b) => b.amount - a.amount)
@@ -129,7 +128,6 @@ export default function GroupBalancesPage() {
               </div>
             </div>
 
-            {/* Owed to me / I owe summary row */}
             {(totalOwedToMe > 0 || totalIOwe > 0) && (
               <div className="flex gap-2 mt-1">
                 {totalOwedToMe > 0 && (
@@ -153,7 +151,6 @@ export default function GroupBalancesPage() {
               </div>
             )}
 
-            {/* Pending notice on my balance */}
             {totalPending > 0 && (
               <div className="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-2xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200/50 dark:border-amber-800/30">
                 <Clock size={12} className="text-amber-500 animate-pulse flex-shrink-0" />
@@ -172,7 +169,7 @@ export default function GroupBalancesPage() {
               Members
             </h2>
             <div className="glass-panel rounded-3xl px-4 py-3 space-y-3">
-              {memberBalances.map((b, idx) => {
+              {memberBalances.map((b) => {
                 const profile = profiles[b.userId]
                 if (!profile) return null
                 const isMe = b.userId === currentUserId
@@ -193,7 +190,6 @@ export default function GroupBalancesPage() {
                           {isPositive ? '+' : ''}{formatCurrency(b.amount)}
                         </p>
                       </div>
-                      {/* Bar */}
                       <div className="h-1.5 bg-gray-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
@@ -207,7 +203,6 @@ export default function GroupBalancesPage() {
                 )
               })}
 
-              {/* Zero balance members note */}
               {balances.filter(b => Math.abs(b.amount) < 0.01).length > 0 && (
                 <div className="pt-2 border-t border-gray-100 dark:border-neutral-800 flex items-center gap-1.5">
                   <Minus size={11} className="text-gray-400" />
@@ -258,18 +253,22 @@ export default function GroupBalancesPage() {
                     rawShares={rawShares}
                     onMarkPaid={(d, amt) => handleSettle(d, amt)}
                     onConfirm={(d, amt) => handleSettle(d, amt)}
+                    onReject={(d) => handleReject(d)}
+                    onCancel={(d) => handleCancel(d)}
                     onRemind={handleRemind}
                     remindState={getRemindState(debt)}
                   />
                 )
               })}
 
-              {/* Orphan pending (simplified away debt but pending still exists) */}
+              {/* Orphan pending — simplified debt is gone but a pending settlement remains */}
               {orphanPending.map(s => {
                 const fromProfile = profiles[s.from_user]
                 const toProfile = profiles[s.to_user]
                 const isMeDebtor = s.from_user === currentUserId
                 const isMeCreditor = s.to_user === currentUserId
+                const orphanDebt = { from: s.from_user, to: s.to_user, amount: s.amount }
+                const orphanKey = `${s.from_user}-${s.to_user}`
 
                 if (!isMeDebtor && !isMeCreditor) return null
 
@@ -294,21 +293,44 @@ export default function GroupBalancesPage() {
                         </p>
                         <p className="text-sm font-black text-amber-500 mt-0.5">{formatCurrency(s.amount)}</p>
                       </div>
-                      {isMeCreditor && (
-                        <button
-                          onClick={() => handleSettle({ from: s.from_user, to: s.to_user, amount: s.amount }, s.amount)}
-                          disabled={settling === `${s.from_user}-${s.to_user}`}
-                          className="py-2 px-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50"
-                        >
-                          Confirm
-                        </button>
-                      )}
-                      {isMeDebtor && (
-                        <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40">
-                          <Clock size={13} className="text-amber-500 animate-pulse" />
-                          <span className="text-[12px] font-semibold text-amber-600 dark:text-amber-400">Waiting…</span>
-                        </div>
-                      )}
+                      <div className="flex gap-2">
+                        {isMeCreditor && (
+                          <>
+                            <button
+                              onClick={() => handleSettle(orphanDebt, s.amount)}
+                              disabled={settling === orphanKey}
+                              className="py-2 px-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                              <CircleCheckBig size={14} />
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => handleReject(orphanDebt)}
+                              disabled={settling === orphanKey}
+                              title="Reject — payment not received"
+                              className="py-2 px-3 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 border border-gray-200 dark:border-neutral-700 disabled:opacity-50"
+                            >
+                              <X size={14} />
+                            </button>
+                          </>
+                        )}
+                        {isMeDebtor && (
+                          <>
+                            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40">
+                              <Clock size={13} className="text-amber-500 animate-pulse" />
+                              <span className="text-[12px] font-semibold text-amber-600 dark:text-amber-400">Waiting…</span>
+                            </div>
+                            <button
+                              onClick={() => handleCancel(orphanDebt)}
+                              disabled={settling === orphanKey}
+                              title="Cancel your pending submission"
+                              className="py-2 px-3 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 border border-gray-200 dark:border-neutral-700 disabled:opacity-50"
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )

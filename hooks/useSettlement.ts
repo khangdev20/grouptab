@@ -76,7 +76,6 @@ export function useSettlement({
           s => s.from_user === debt.from && s.to_user === debt.to,
         )
 
-        // FIX Bug #3: block ghost confirm — creditor cannot confirm without a debtor-initiated pending
         if (existingPending.length === 0) {
           toast.error(`No pending payment from ${fromProfile?.name ?? 'the debtor'} yet. Ask them to mark as paid first.`)
           return
@@ -90,14 +89,12 @@ export function useSettlement({
 
           if (error) throw new Error(error.message)
 
-          // Update the corresponding settlement message
           await supabase
             .from('messages')
             .update({
               content: `${fromProfile?.name ?? 'Someone'} paid ${toProfile?.name ?? 'Someone'} ${formatCurrency(s.amount)}`,
               metadata: {
                 settlement_id: s.id,
-                // FIX Bug #2: always use s.amount from the DB record, not the UI-passed amount
                 amount: s.amount,
                 from_user: s.from_user,
                 from_name: fromProfile?.name ?? '',
@@ -122,11 +119,136 @@ export function useSettlement({
     } catch (err: any) {
       toast.error(err?.message ?? 'Something went wrong')
     } finally {
-      // Realtime sẽ cập nhật UI — không cần delay giả
       setSettling(null)
       onDone?.()
     }
   }, [currentUserId, groupId, profiles, pendingSettlements, onDone])
 
-  return { settling, handleSettle }
+  // Creditor rejects a pending payment → status 'rejected', debt reappears
+  const handleReject = useCallback(async (debt: Debt) => {
+    if (!currentUserId || currentUserId !== debt.to) return
+    const key = `${debt.from}-${debt.to}`
+    setSettling(key)
+    const supabase = createClient()
+
+    const fromProfile = profiles[debt.from]
+    const toProfile = profiles[debt.to]
+
+    const existingPending = pendingSettlements.filter(
+      s => s.from_user === debt.from && s.to_user === debt.to,
+    )
+
+    if (existingPending.length === 0) {
+      toast.error('No pending payment to reject.')
+      setSettling(null)
+      return
+    }
+
+    try {
+      for (const s of existingPending) {
+        const { error } = await supabase
+          .from('settlements')
+          .update({ status: 'rejected' })
+          .eq('id', s.id)
+
+        if (error) throw new Error(error.message)
+
+        await supabase
+          .from('messages')
+          .update({
+            content: `${toProfile?.name ?? 'Someone'} rejected the payment from ${fromProfile?.name ?? 'Someone'} — ${formatCurrency(s.amount)} is still owed.`,
+            metadata: {
+              settlement_id: s.id,
+              amount: s.amount,
+              from_user: s.from_user,
+              from_name: fromProfile?.name ?? '',
+              to_user: s.to_user,
+              to_name: toProfile?.name ?? '',
+              status: 'rejected',
+            },
+          })
+          .eq('type', 'settlement')
+          .filter('metadata->>settlement_id', 'eq', s.id)
+      }
+
+      const rejectedTotal = existingPending.reduce((sum, s) => sum + s.amount, 0)
+      toast(`Rejected ${formatCurrency(rejectedTotal)} — debt restored.`, { icon: '↩️' })
+      pushGroupNotify(
+        groupId,
+        'Payment rejected',
+        `${toProfile?.name?.split(' ')[0] ?? 'The creditor'} rejected your payment of ${formatCurrency(rejectedTotal)}. Please try again.`,
+        'settlement',
+      )
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Something went wrong')
+    } finally {
+      setSettling(null)
+      onDone?.()
+    }
+  }, [currentUserId, groupId, profiles, pendingSettlements, onDone])
+
+  // Debtor cancels their own pending before creditor confirms
+  const handleCancel = useCallback(async (debt: Debt) => {
+    if (!currentUserId || currentUserId !== debt.from) return
+    const key = `${debt.from}-${debt.to}`
+    setSettling(key)
+    const supabase = createClient()
+
+    const fromProfile = profiles[debt.from]
+    const toProfile = profiles[debt.to]
+
+    const existingPending = pendingSettlements.filter(
+      s => s.from_user === debt.from && s.to_user === debt.to,
+    )
+
+    if (existingPending.length === 0) {
+      toast.error('No pending payment to cancel.')
+      setSettling(null)
+      return
+    }
+
+    try {
+      for (const s of existingPending) {
+        const { error } = await supabase
+          .from('settlements')
+          .update({ status: 'cancelled' })
+          .eq('id', s.id)
+
+        if (error) throw new Error(error.message)
+
+        await supabase
+          .from('messages')
+          .update({
+            content: `${fromProfile?.name ?? 'Someone'} cancelled their pending payment of ${formatCurrency(s.amount)} to ${toProfile?.name ?? 'Someone'}.`,
+            metadata: {
+              settlement_id: s.id,
+              amount: s.amount,
+              from_user: s.from_user,
+              from_name: fromProfile?.name ?? '',
+              to_user: s.to_user,
+              to_name: toProfile?.name ?? '',
+              status: 'cancelled',
+            },
+          })
+          .eq('type', 'settlement')
+          .filter('metadata->>settlement_id', 'eq', s.id)
+      }
+
+      const cancelledTotal = existingPending.reduce((sum, s) => sum + s.amount, 0)
+      toast(`Cancelled ${formatCurrency(cancelledTotal)} pending payment.`, { icon: '✕' })
+      pushGroupNotify(
+        groupId,
+        'Payment cancelled',
+        `${fromProfile?.name?.split(' ')[0] ?? 'The debtor'} cancelled their pending payment of ${formatCurrency(cancelledTotal)}.`,
+        'settlement',
+      )
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Something went wrong')
+    } finally {
+      setSettling(null)
+      onDone?.()
+    }
+  }, [currentUserId, groupId, profiles, pendingSettlements, onDone])
+
+  return { settling, handleSettle, handleReject, handleCancel }
 }

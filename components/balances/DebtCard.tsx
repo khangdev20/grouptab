@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import {
   CheckCircle2, Bell, ChevronDown, TrendingUp, TrendingDown,
-  Clock, CircleCheckBig, CircleDollarSign,
+  Clock, CircleCheckBig, CircleDollarSign, X, RotateCcw,
 } from 'lucide-react'
 import { Debt, Profile } from '@/lib/types'
 import { formatCurrency, formatDate, getDebtBreakdown, DebtBreakdownItem } from '@/lib/utils'
@@ -28,6 +28,8 @@ interface DebtCardProps {
   rawShares: any[]
   onMarkPaid: (debt: Debt, amount: number) => void
   onConfirm: (debt: Debt, amount: number) => void
+  onReject: (debt: Debt) => void
+  onCancel: (debt: Debt) => void
   onRemind: (debt: Debt) => void
   remindState: { canRemind: boolean; remaining: number }
 }
@@ -36,7 +38,7 @@ export default function DebtCard({
   debt, profiles, currentUserId,
   pendingAmount, remainingDebt,
   settling, rawShares,
-  onMarkPaid, onConfirm, onRemind, remindState,
+  onMarkPaid, onConfirm, onReject, onCancel, onRemind, remindState,
 }: DebtCardProps) {
   const [expanded, setExpanded] = useState(false)
 
@@ -48,7 +50,6 @@ export default function DebtCard({
   const { canRemind, remaining } = remindState
   const isSettling = settling === key
 
-  // Compute breakdown from raw shares
   const breakdown: DebtBreakdownItem[] = getDebtBreakdown(debt.from, debt.to, rawShares)
   const owedItems = breakdown.filter(i => i.direction === 'owed')
   const offsetItems = breakdown.filter(i => i.direction === 'offset')
@@ -56,18 +57,18 @@ export default function DebtCard({
   const fromName = fromIsMe ? 'You' : from?.name?.split(' ')[0] ?? '?'
   const toName = toIsMe ? 'you' : to?.name?.split(' ')[0] ?? '?'
 
-  // Status derived from amounts
-  const totalOriginal = debt.amount  // remainingDebt + pendingAmount ≈ original
   const hasPending = pendingAmount > 0
-  const isFullyPending = remainingDebt <= 0 && hasPending  // debtor paid all, waiting confirm
+  const isFullyPending = remainingDebt <= 0 && hasPending
+  // Progress: how much of the original debt is covered (pending + already-confirmed portion)
+  const totalOriginal = debt.amount
   const progressPct = totalOriginal > 0
-    ? Math.min(100, Math.round(((totalOriginal - remainingDebt) / totalOriginal) * 100))
+    ? Math.min(100, Math.round((pendingAmount / totalOriginal) * 100))
     : 0
 
   return (
     <div className="flex flex-col glass-panel rounded-3xl overflow-hidden">
 
-      {/* ── Status Banner (pending confirmation) ──────────────────────────── */}
+      {/* ── Status Banner ──────────────────────────────────────────────────── */}
       {hasPending && (
         <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50/80 dark:bg-amber-900/20 border-b border-amber-200/60 dark:border-amber-800/40">
           <Clock size={13} className="text-amber-500 flex-shrink-0 animate-pulse" />
@@ -104,14 +105,20 @@ export default function DebtCard({
             {/* Amount row */}
             <div className="flex items-baseline gap-2 mt-0.5">
               {remainingDebt > 0 ? (
-                <p className="text-sm font-black text-emerald-500">{formatCurrency(remainingDebt)}</p>
+                <>
+                  <p className="text-sm font-black text-emerald-500">{formatCurrency(remainingDebt)}</p>
+                  {hasPending && (
+                    <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+                      of {formatCurrency(debt.amount)}
+                    </p>
+                  )}
+                </>
+              ) : isFullyPending ? (
+                <p className="text-sm font-black text-amber-500">
+                  {formatCurrency(pendingAmount)} <span className="font-normal text-amber-400 text-[11px]">awaiting</span>
+                </p>
               ) : (
                 <p className="text-sm font-black text-gray-400 dark:text-gray-500 line-through">{formatCurrency(debt.amount)}</p>
-              )}
-              {hasPending && remainingDebt > 0 && (
-                <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
-                  of {formatCurrency(debt.amount)}
-                </p>
               )}
             </div>
           </div>
@@ -134,25 +141,14 @@ export default function DebtCard({
           )}
         </div>
 
-        {/* ── Progress bar ─────────────────────────────────────────────────── */}
+        {/* ── Progress bar (only when partial/full pending) ─────────────── */}
         {hasPending && totalOriginal > 0 && (
           <div className="mt-3">
             <div className="relative h-1.5 bg-gray-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-              {/* Pending slice */}
               <div
                 className="absolute left-0 top-0 h-full bg-amber-400/70 dark:bg-amber-500/60 rounded-full transition-all duration-500"
                 style={{ width: `${progressPct}%` }}
               />
-              {/* Remaining (still owed) — shown if partial */}
-              {remainingDebt > 0 && (
-                <div
-                  className="absolute top-0 h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{
-                    left: `${progressPct}%`,
-                    width: '0%',  // visual anchor only; bg shows remaining via parent
-                  }}
-                />
-              )}
             </div>
             <div className="flex justify-between mt-1">
               <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
@@ -182,6 +178,19 @@ export default function DebtCard({
             </button>
           )}
 
+          {/* DEBTOR: Cancel pending — debtor cancels before creditor confirms */}
+          {fromIsMe && hasPending && (
+            <button
+              onClick={() => onCancel(debt)}
+              disabled={isSettling}
+              title="Cancel your pending payment submission"
+              className="py-2.5 px-3 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center gap-1.5 flex-shrink-0 bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 border border-gray-200 dark:border-neutral-700 disabled:opacity-50"
+            >
+              <RotateCcw size={14} />
+              <span className="text-[12px]">Cancel</span>
+            </button>
+          )}
+
           {/* CREDITOR: Remind — only if there's remaining debt */}
           {toIsMe && remainingDebt > 0 && (
             <button
@@ -202,16 +211,28 @@ export default function DebtCard({
             </button>
           )}
 
-          {/* CREDITOR: Confirm — FIX Bug #3: only show when pendingAmount > 0 */}
+          {/* CREDITOR: Confirm payment */}
           {toIsMe && hasPending && (
             <button
-              // FIX Bug #2: always pass pendingAmount (not remainingDebt) to confirm
               onClick={() => onConfirm(debt, pendingAmount)}
               disabled={isSettling}
               className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white rounded-xl text-sm font-semibold haptic transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <CircleCheckBig size={16} />
               {isSettling ? 'Confirming…' : (isFullyPending ? 'Confirm Payment' : 'Confirm Partial')}
+            </button>
+          )}
+
+          {/* CREDITOR: Reject payment — payment wasn't actually received */}
+          {toIsMe && hasPending && (
+            <button
+              onClick={() => onReject(debt)}
+              disabled={isSettling}
+              title="Reject — payment not received"
+              className="py-2.5 px-3 rounded-xl text-sm font-semibold haptic transition-all flex items-center justify-center gap-1.5 flex-shrink-0 bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 border border-gray-200 dark:border-neutral-700 disabled:opacity-50"
+            >
+              <X size={14} />
+              <span className="text-[12px]">Reject</span>
             </button>
           )}
 
@@ -276,7 +297,15 @@ export default function DebtCard({
           {/* Net summary */}
           <div className="mt-3 pt-3 border-t border-gray-200/60 dark:border-neutral-700/60 flex items-center justify-between">
             <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Net owed</p>
-            <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatCurrency(remainingDebt > 0 ? remainingDebt : debt.amount)}</p>
+            {isFullyPending ? (
+              <p className="text-sm font-black text-amber-500">
+                {formatCurrency(pendingAmount)} <span className="font-normal text-[11px] text-amber-400">pending</span>
+              </p>
+            ) : (
+              <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(remainingDebt > 0 ? remainingDebt : debt.amount)}
+              </p>
+            )}
           </div>
 
           {breakdown.length > 0 && (
