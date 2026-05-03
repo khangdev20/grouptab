@@ -24,6 +24,7 @@ interface DebtCardProps {
   currentUserId: string | null
   pendingAmount: number
   remainingDebt: number
+  excessPending: number
   settling: string | null
   rawShares: any[]
   onMarkPaid: (debt: Debt, amount: number) => void
@@ -36,7 +37,7 @@ interface DebtCardProps {
 
 export default function DebtCard({
   debt, profiles, currentUserId,
-  pendingAmount, remainingDebt,
+  pendingAmount, remainingDebt, excessPending,
   settling, rawShares,
   onMarkPaid, onConfirm, onReject, onCancel, onRemind, remindState,
 }: DebtCardProps) {
@@ -70,13 +71,23 @@ export default function DebtCard({
 
       {/* ── Status Banner ──────────────────────────────────────────────────── */}
       {hasPending && (
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50/80 dark:bg-amber-900/20 border-b border-amber-200/60 dark:border-amber-800/40">
-          <Clock size={13} className="text-amber-500 flex-shrink-0 animate-pulse" />
-          <p className="text-[12px] font-semibold text-amber-700 dark:text-amber-400 flex-1 min-w-0">
-            {formatCurrency(pendingAmount)} pending confirmation
-            {isFullyPending && ' · fully paid'}
+        <div className={`flex items-center gap-2 px-4 py-2.5 border-b ${
+          excessPending > 0
+            ? 'bg-orange-50/80 dark:bg-orange-900/20 border-orange-200/60 dark:border-orange-800/40'
+            : 'bg-amber-50/80 dark:bg-amber-900/20 border-amber-200/60 dark:border-amber-800/40'
+        }`}>
+          <Clock size={13} className={`flex-shrink-0 animate-pulse ${excessPending > 0 ? 'text-orange-500' : 'text-amber-500'}`} />
+          <p className={`text-[12px] font-semibold flex-1 min-w-0 ${excessPending > 0 ? 'text-orange-700 dark:text-orange-400' : 'text-amber-700 dark:text-amber-400'}`}>
+            {excessPending > 0
+              ? `${formatCurrency(pendingAmount)} pending · ${formatCurrency(excessPending)} over current debt`
+              : `${formatCurrency(pendingAmount)} pending confirmation${isFullyPending ? ' · fully paid' : ''}`
+            }
           </p>
-          {isFullyPending && (
+          {excessPending > 0 ? (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-200/60 dark:bg-orange-800/40 text-orange-700 dark:text-orange-300 flex-shrink-0">
+              OVERPAID
+            </span>
+          ) : isFullyPending && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200/60 dark:bg-amber-800/40 text-amber-700 dark:text-amber-300 flex-shrink-0">
               AWAITING
             </span>

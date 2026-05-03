@@ -1,7 +1,7 @@
 // hooks/useGroupBalances.ts
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Balance, Debt, Profile } from '@/lib/types'
 import { calculateBalances, simplifyDebts } from '@/lib/utils'
@@ -21,12 +21,12 @@ export function useGroupBalances(groupId: string) {
   const [rawShares, setRawShares] = useState<any[]>([])
   const [memberIds, setMemberIds] = useState<string[]>([])
 
-  // Refs để tránh stale closure trong Realtime handlers
   const sharesRef = useRef<any[]>([])
   const settlementsRef = useRef<any[]>([])
   const memberIdsRef = useRef<string[]>([])
 
-  const recalcFromData = (
+  // Stable — only uses setter fns (which never change) and imported pure fns
+  const recalcFromData = useCallback((
     shares: any[],
     allSettlements: any[],
     ids: string[],
@@ -36,7 +36,23 @@ export function useGroupBalances(groupId: string) {
     const bal = calculateBalances(shares, completed, ids)
     setBalances(bal)
     setDebts(simplifyDebts(bal))
-  }
+  }, [])
+
+  // Exposed so callers can force-sync after mutations (Supabase doesn't echo
+  // postgres_changes events back to the client that triggered the write).
+  const refetch = useCallback(async () => {
+    const supabase = createClient()
+    const [{ data: settlements }, { data: shares }] = await Promise.all([
+      fetchSettlements(supabase, groupId),
+      fetchExpenseShares(supabase, groupId),
+    ])
+    if (settlements) settlementsRef.current = settlements
+    if (shares) {
+      sharesRef.current = shares
+      setRawShares(shares)
+    }
+    recalcFromData(sharesRef.current, settlementsRef.current, memberIdsRef.current)
+  }, [groupId, recalcFromData])
 
   useEffect(() => {
     const supabase = createClient()
@@ -66,7 +82,6 @@ export function useGroupBalances(groupId: string) {
       setProfiles(profileMap)
       setMemberIds(ids)
 
-      // Gán vào refs trước khi recalc
       sharesRef.current = shares ?? []
       settlementsRef.current = settlements ?? []
       memberIdsRef.current = ids
@@ -124,11 +139,11 @@ export function useGroupBalances(groupId: string) {
       supabase.removeChannel(channel)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [groupId])
+  }, [groupId, recalcFromData])
 
-  // Không expose setPendingSettlements — Realtime quản lý hoàn toàn
   return {
     balances, debts, profiles, currentUserId, loading,
     pendingSettlements, rawShares, memberIds,
+    refetch,
   }
 }

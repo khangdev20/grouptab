@@ -275,6 +275,7 @@ export default function GroupFeedPage() {
         involvedMembers={involvedMembers} setInvolvedMembers={setInvolvedMembers}
         profiles={profiles} currentUserId={currentUserId}
         saving={saving} onSubmit={handleSubmit}
+        pendingCount={pendingSettlements.length}
       />
     </div>
   )
