@@ -23,7 +23,7 @@ export default function GroupBalancesPage() {
   } = useGroupBalances(groupId)
 
   const { settling, handleSettle, handleReject, handleCancel } = useSettlement({
-    groupId, profiles, pendingSettlements, currentUserId,
+    groupId, profiles, currentUserId,
     onDone: refetch,
   })
 

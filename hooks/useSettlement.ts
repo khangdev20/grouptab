@@ -10,13 +10,12 @@ import toast from 'react-hot-toast'
 interface UseSettlementOptions {
   groupId: string
   profiles: Record<string, Profile>
-  pendingSettlements: any[]
   currentUserId: string | null
   onDone?: () => void
 }
 
 export function useSettlement({
-  groupId, profiles, pendingSettlements, currentUserId, onDone,
+  groupId, profiles, currentUserId, onDone,
 }: UseSettlementOptions) {
   const [settling, setSettling] = useState<string | null>(null)
 
@@ -71,23 +70,33 @@ export function useSettlement({
           'settlement',
         )
       } else {
-        // Creditor confirm → UPDATE existing pending → completed
-        const existingPending = pendingSettlements.filter(
-          s => s.from_user === debt.from && s.to_user === debt.to,
-        )
+        // Creditor confirm → fetch fresh from DB (avoid stale closure), UPDATE → completed
+        const { data: freshPending, error: fetchErr } = await supabase
+          .from('settlements')
+          .select('*')
+          .eq('group_id', groupId)
+          .eq('from_user', debt.from)
+          .eq('to_user', debt.to)
+          .eq('status', 'pending')
 
-        if (existingPending.length === 0) {
+        if (fetchErr) throw new Error(fetchErr.message)
+
+        if (!freshPending || freshPending.length === 0) {
           toast.error(`No pending payment from ${fromProfile?.name ?? 'the debtor'} yet. Ask them to mark as paid first.`)
           return
         }
 
-        for (const s of existingPending) {
-          const { error } = await supabase
+        for (const s of freshPending) {
+          const { data: updated, error } = await supabase
             .from('settlements')
             .update({ status: 'completed' })
             .eq('id', s.id)
+            .select('id, status')
 
           if (error) throw new Error(error.message)
+          if (!updated || updated.length === 0) {
+            throw new Error('Could not confirm payment — permission denied or settlement not found.')
+          }
 
           await supabase
             .from('messages')
@@ -107,7 +116,7 @@ export function useSettlement({
             .filter('metadata->>settlement_id', 'eq', s.id)
         }
 
-        const confirmedTotal = existingPending.reduce((sum, s) => sum + s.amount, 0)
+        const confirmedTotal = freshPending.reduce((sum, s) => sum + s.amount, 0)
         toast.success(`Confirmed ${formatCurrency(confirmedTotal)} payment!`)
         pushGroupNotify(
           groupId,
@@ -122,7 +131,7 @@ export function useSettlement({
       setSettling(null)
       onDone?.()
     }
-  }, [currentUserId, groupId, profiles, pendingSettlements, onDone])
+  }, [currentUserId, groupId, profiles, onDone])
 
   // Creditor rejects a pending payment → status 'rejected', debt reappears
   const handleReject = useCallback(async (debt: Debt) => {
@@ -134,11 +143,21 @@ export function useSettlement({
     const fromProfile = profiles[debt.from]
     const toProfile = profiles[debt.to]
 
-    const existingPending = pendingSettlements.filter(
-      s => s.from_user === debt.from && s.to_user === debt.to,
-    )
+    const { data: existingPending, error: fetchErr1 } = await supabase
+      .from('settlements')
+      .select('*')
+      .eq('group_id', groupId)
+      .eq('from_user', debt.from)
+      .eq('to_user', debt.to)
+      .eq('status', 'pending')
 
-    if (existingPending.length === 0) {
+    if (fetchErr1) {
+      toast.error(fetchErr1.message)
+      setSettling(null)
+      return
+    }
+
+    if (!existingPending || existingPending.length === 0) {
       toast.error('No pending payment to reject.')
       setSettling(null)
       return
@@ -146,12 +165,16 @@ export function useSettlement({
 
     try {
       for (const s of existingPending) {
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('settlements')
           .update({ status: 'rejected' })
           .eq('id', s.id)
+          .select('id, status')
 
         if (error) throw new Error(error.message)
+        if (!updated || updated.length === 0) {
+          throw new Error('Could not reject payment — permission denied.')
+        }
 
         await supabase
           .from('messages')
@@ -185,7 +208,7 @@ export function useSettlement({
       setSettling(null)
       onDone?.()
     }
-  }, [currentUserId, groupId, profiles, pendingSettlements, onDone])
+  }, [currentUserId, groupId, profiles, onDone])
 
   // Debtor cancels their own pending before creditor confirms
   const handleCancel = useCallback(async (debt: Debt) => {
@@ -197,11 +220,21 @@ export function useSettlement({
     const fromProfile = profiles[debt.from]
     const toProfile = profiles[debt.to]
 
-    const existingPending = pendingSettlements.filter(
-      s => s.from_user === debt.from && s.to_user === debt.to,
-    )
+    const { data: existingPending, error: fetchErr2 } = await supabase
+      .from('settlements')
+      .select('*')
+      .eq('group_id', groupId)
+      .eq('from_user', debt.from)
+      .eq('to_user', debt.to)
+      .eq('status', 'pending')
 
-    if (existingPending.length === 0) {
+    if (fetchErr2) {
+      toast.error(fetchErr2.message)
+      setSettling(null)
+      return
+    }
+
+    if (!existingPending || existingPending.length === 0) {
       toast.error('No pending payment to cancel.')
       setSettling(null)
       return
@@ -209,12 +242,16 @@ export function useSettlement({
 
     try {
       for (const s of existingPending) {
-        const { error } = await supabase
+        const { data: updated, error } = await supabase
           .from('settlements')
           .update({ status: 'cancelled' })
           .eq('id', s.id)
+          .select('id, status')
 
         if (error) throw new Error(error.message)
+        if (!updated || updated.length === 0) {
+          throw new Error('Could not cancel payment — permission denied.')
+        }
 
         await supabase
           .from('messages')
@@ -248,7 +285,7 @@ export function useSettlement({
       setSettling(null)
       onDone?.()
     }
-  }, [currentUserId, groupId, profiles, pendingSettlements, onDone])
+  }, [currentUserId, groupId, profiles, onDone])
 
   return { settling, handleSettle, handleReject, handleCancel }
 }
